@@ -30,9 +30,10 @@
   /* ---------- tiny SVG chart helper ---------- */
   HF.chartSVG = function (opts) {
     // opts: {w,h, series:[{name,color,values:[..], type:'line'|'bar'}], labels:[..], yFmt, marks:[{x,y,label}]}
-    const W = opts.w || 560,
-      H = opts.h || 240,
-      P = { l: 56, r: 14, t: 14, b: 30 };
+    const narrow = window.innerWidth < 600;
+    const W = opts.w || (narrow ? 380 : 560),
+      H = opts.h || (narrow ? 270 : 240),
+      P = { l: narrow ? 50 : 56, r: 12, t: 14, b: 30 };
     const all = opts.series.flatMap((s) => s.values).concat(opts.yMin != null ? [opts.yMin] : [0]);
     let max = Math.max(...all),
       min = Math.min(0, ...all);
@@ -47,7 +48,7 @@
       const v = min + ((max - min) * k) / 4;
       g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" class="grid"/><text x="${P.l - 6}" y="${y(v) + 4}" text-anchor="end" class="tick">${fmt(v)}</text>`;
     }
-    const step = Math.ceil(n / 12);
+    const step = Math.ceil(n / (narrow ? 7 : 12));
     opts.labels.forEach((l, i) => {
       if (i % step === 0) g += `<text x="${opts.series.some((s) => s.type === 'bar') ? xb(i) : x(i)}" y="${H - 10}" text-anchor="middle" class="tick">${l}</text>`;
     });
@@ -261,8 +262,8 @@
       const fb = feedback();
       const addLine = () => {
         const sel = h('select', { 'aria-label': 'Account' }, h('option', { value: '' }, '— choose account —'), (sc.accounts || o.accounts).map((a) => h('option', { value: a }, a)));
-        const dr = h('input', { type: 'number', min: 0, step: 'any', placeholder: '0', 'aria-label': 'Debit' });
-        const cr = h('input', { type: 'number', min: 0, step: 'any', placeholder: '0', 'aria-label': 'Credit' });
+        const dr = h('input', { type: 'number', inputmode: 'decimal', min: 0, step: 'any', placeholder: 'Debit', 'aria-label': 'Debit' });
+        const cr = h('input', { type: 'number', inputmode: 'decimal', min: 0, step: 'any', placeholder: 'Credit', 'aria-label': 'Credit' });
         dr.addEventListener('input', () => {
           if (dr.value) cr.value = '';
           tot();
@@ -526,12 +527,12 @@
         N = Math.max(1, Math.min(30, Math.round(+life.value || 1)));
       const rows = compute(method.value, C, S, N);
       let acc = 0;
-      const table = `<table class="data"><thead><tr><th>Year</th><th>Depreciation expense</th><th>Accumulated</th><th>Book value (end)</th></tr></thead><tbody>${rows
+      const table = `<div class="o-scroll"><table class="data"><thead><tr><th>Year</th><th>Depreciation expense</th><th>Accumulated</th><th>Book value (end)</th></tr></thead><tbody>${rows
         .map((r) => {
           acc += r.dep;
           return `<tr><td>${r.y}</td><td>${money(r.dep)}</td><td>${money(acc)}</td><td>${money(r.bv)}</td></tr>`;
         })
-        .join('')}</tbody></table>`;
+        .join('')}</tbody></table></div>`;
       const all = ['sl', 'ddb', 'syd'].map((m) => [0, ...compute(m, C, S, N).map((r) => r.bv)].map((v, i) => (i === 0 ? C : v)));
       const chart = HF.chartSVG({
         labels: ['Start', ...rows.map((r) => 'Y' + r.y)],
@@ -842,9 +843,9 @@
           { name: 'Interest', color: '#e4572e', values: rows.map((x) => x.int), type: 'bar' },
           { name: 'Principal', color: '#2e86ab', values: rows.map((x) => x.prin), type: 'bar' },
         ],
-      })}<table class="data"><thead><tr><th>Yr</th><th>Interest (Dr Interest Exp.)</th><th>Principal (Dr Loan)</th><th>Balance</th></tr></thead><tbody>${rows
+      })}<div class="o-scroll"><table class="data"><thead><tr><th>Yr</th><th>Interest (Dr Interest Exp.)</th><th>Principal (Dr Loan)</th><th>Balance</th></tr></thead><tbody>${rows
         .map((x) => `<tr><td>${x.y}</td><td>${money(x.int, { dec: true })}</td><td>${money(x.prin, { dec: true })}</td><td>${money(x.bal, { dec: true })}</td></tr>`)
-        .join('')}</tbody></table></div>`;
+        .join('')}</tbody></table></div></div>`;
     }
     [P, r, n].forEach((el) => el.addEventListener('input', () => (draw(), HF.solved('loan', 5))));
     body.append(h('div', { class: 'w-form' }, h('label', {}, 'Loan amount ', P), h('label', {}, 'Interest % / yr ', r), h('label', {}, 'Years ', n)), out);
@@ -1260,7 +1261,7 @@
           ),
           h('div', {
             class: 'o-lines',
-            html: `<table><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Taxes</th><th>Subtotal</th></tr></thead><tbody><tr><td>${purchase ? '[GEAR] Bike chain set' : '[BIKE] City bike'}</td><td>${qty}</td><td>${money(unit, { dec: true })}</td><td><span class="o-tag">15%</span></td><td>${money(untaxed, { dec: true })}</td></tr></tbody></table><div class="o-totals"><div>Untaxed Amount <b>${money(untaxed, { dec: true })}</b></div><div>Tax 15% <b>${money(tax, { dec: true })}</b></div><div class="big">Total <b>${money(total, { dec: true })}</b></div>${stage >= 2 ? `<div><i>Paid on 10/20/2026</i> <b>${money(total, { dec: true })}</b></div><div class="big">Amount Due <b>${money(stage === 3 ? 0 : 0, { dec: true })}</b></div>` : ''}</div>`,
+            html: `<div class="o-scroll"><table><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Taxes</th><th>Subtotal</th></tr></thead><tbody><tr><td>${purchase ? '[GEAR] Bike chain set' : '[BIKE] City bike'}</td><td>${qty}</td><td>${money(unit, { dec: true })}</td><td><span class="o-tag">15%</span></td><td>${money(untaxed, { dec: true })}</td></tr></tbody></table></div><div class="o-totals"><div>Untaxed Amount <b>${money(untaxed, { dec: true })}</b></div><div>Tax 15% <b>${money(tax, { dec: true })}</b></div><div class="big">Total <b>${money(total, { dec: true })}</b></div>${stage >= 2 ? `<div><i>Paid on 10/20/2026</i> <b>${money(total, { dec: true })}</b></div><div class="big">Amount Due <b>${money(stage === 3 ? 0 : 0, { dec: true })}</b></div>` : ''}</div>`,
           }),
           h('div', { class: 'o-tabs', html: '<span>Invoice Lines</span><span class="on">Journal Items</span>' }),
           h('div', {
@@ -1269,9 +1270,9 @@
               ? entries
                   .map(
                     (e, k) =>
-                      `<div class="o-je ${k === entries.length - 1 ? 'new' : ''}"><div class="o-jn">${jnames[k]}</div><table><thead><tr><th>Account</th><th>Debit</th><th>Credit</th></tr></thead><tbody>${e
+                      `<div class="o-je ${k === entries.length - 1 ? 'new' : ''}"><div class="o-jn">${jnames[k]}</div><div class="o-scroll"><table><thead><tr><th>Account</th><th>Debit</th><th>Credit</th></tr></thead><tbody>${e
                         .map((l) => `<tr><td>${l.a}</td><td>${l.d ? money(l.d, { dec: true }) : ''}</td><td>${l.c ? money(l.c, { dec: true }) : ''}</td></tr>`)
-                        .join('')}</tbody></table></div>`
+                        .join('')}</tbody></table></div></div>`
                   )
                   .join('')
               : '<p class="o-empty">No journal items yet — drafts don’t touch the books.</p>',

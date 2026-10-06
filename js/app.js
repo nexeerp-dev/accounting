@@ -307,7 +307,7 @@
     const toc = h(
       'nav',
       { class: 'ch-toc', 'aria-label': 'In this chapter' },
-      h('div', { class: 'toc-head' }, 'In this chapter'),
+      h('button', { class: 'toc-head', type: 'button', 'aria-expanded': 'false', onclick: (e) => { const nav = e.currentTarget.parentNode; nav.classList.toggle('open'); e.currentTarget.setAttribute('aria-expanded', nav.classList.contains('open')); } }, 'In this chapter (' + ctx.toc.length + ' sections)'),
       h(
         'ol',
         {},
@@ -321,6 +321,7 @@
                 href: '#/ch/' + c.id,
                 onclick: (e) => {
                   e.preventDefault();
+                  e.currentTarget.closest('.ch-toc').classList.remove('open');
                   HF.$('#sec-' + (i + 1)).scrollIntoView({ behavior: 'smooth', block: 'start' });
                 },
               },

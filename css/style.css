@@ -197,7 +197,7 @@ section > h2.marker { font-size: 38px; text-align: center; }
 .readbar i { display: block; height: 100%; width: 0; background: var(--accent); }
 .ch-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 34px; }
 .ch-toc { position: sticky; top: 80px; align-self: start; font-family: var(--sans); font-size: 15px; max-height: calc(100vh - 100px); overflow: auto; }
-.toc-head { font: 400 18px var(--marker); margin-bottom: 6px; }
+.toc-head { font: 400 18px var(--marker); margin-bottom: 6px; background: none; border: none; padding: 0; text-align: left; cursor: default; color: var(--ink); }
 .ch-toc ol { padding-left: 20px; margin: 0 0 12px; }
 .ch-toc li { margin: 4px 0; }
 .ch-toc li a { color: var(--ink2); text-decoration: none; }
@@ -731,3 +731,111 @@ input[type='range'] { accent-color: var(--accent); }
 }
 .ch-body, .blocks { min-width: 0; }
 .ch-body p, .ch-body li, .bubble, .card p { overflow-wrap: break-word; }
+
+/* ---------- mobile responsiveness pass ---------- */
+.o-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.o-scroll table { min-width: 100%; }
+.o-lines .o-scroll table { min-width: 420px; }
+.o-je .o-scroll table { min-width: 340px; }
+.w-two > * { min-width: 0; }
+@media (max-width: 980px) {
+  .ch-toc { padding: 0; }
+  .toc-head { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 48px; padding: 8px 14px; margin: 0; cursor: pointer; }
+  .toc-head::after { content: '▾'; font-family: var(--sans); transition: transform 0.2s; }
+  .ch-toc.open .toc-head::after { transform: rotate(180deg); }
+  .ch-toc ol, .ch-toc .btn { display: none; }
+  .ch-toc.open ol { display: block; padding: 0 14px 4px 34px; }
+  .ch-toc.open .btn { display: inline-block; margin: 0 14px 12px; }
+  .ch-toc li a { display: block; padding: 6px 0; }
+}
+@media (max-width: 600px) {
+  /* iOS zooms into inputs smaller than 16px */
+  input, select, textarea { font-size: 16px !important; }
+  /* comfortable tap targets */
+  .btn, .btn.tiny, .chip, .o-btn, .seg button { min-height: 44px; }
+  .btn.tiny { padding: 8px 12px; font-size: 14px; }
+  input[type='range'] { height: 32px; width: 100%; }
+  .w-form { flex-direction: column; align-items: stretch; gap: 10px; }
+  .w-form label { justify-content: space-between; }
+  .w-form input[type='number'], .w-form select { max-width: 55%; flex: 1; }
+  .w-form label:has(input[type='range']) { display: grid; grid-template-columns: 1fr auto; }
+  .w-form label:has(input[type='range']) input { grid-column: 1 / -1; grid-row: 2; }
+  .w-actions .btn { flex: 1 1 auto; }
+  .w-title { font-size: 21px; }
+  .w-tape { font-size: 12px; padding: 1px 10px; }
+  .nav-links a { padding: 12px 10px; font-size: 18px; }
+  /* journal builder: account on its own row, debit/credit beneath */
+  .je-table thead { display: none; }
+  .je-table tbody tr { display: grid; grid-template-columns: 1fr 1fr 36px; gap: 6px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .je-table tbody td { padding: 0; }
+  .je-table tbody td:first-child { grid-column: 1 / -1; }
+  .je-table tbody input { width: 100%; }
+  .je-table tfoot tr { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+  .je-table tfoot td:last-child { display: none; }
+  /* odoo simulator */
+  .o-sheet { margin: 8px; padding: 10px; }
+  .o-sheet h3 { font-size: 19px; }
+  .o-ribbon { position: static; margin-bottom: 4px; }
+  .o-top { flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; }
+  .o-bar { padding: 8px 10px; }
+  .o-status span { padding: 4px 10px; }
+  .o-fields { grid-template-columns: 1fr; }
+  .o-totals { width: 100%; }
+  .odoo .callout { margin: 0 8px 8px; }
+  /* other widgets */
+  .inv-stack { min-height: 110px; margin: 8px 10px; }
+  .inv-layer { font-size: 11px; }
+  .eq-acct { font-size: 12px; }
+  .eq-op { font-size: 20px; }
+  .eq-cols { gap: 3px; }
+  .eq-label { font-size: 12px; }
+  .eq-total { font-size: 16px; }
+  .rec-row { grid-template-columns: 46px 1fr auto; font-size: 14px; padding: 8px; }
+  .flash { height: 280px; }
+  .flash-face { font-size: 19px; overflow-y: auto; padding: 14px; }
+  .flash-face.back { font-size: 17px; }
+  .cycle-panel { min-height: 0; }
+  .sort-card { font-size: 14px; padding: 8px 10px; }
+  .sort-bin { min-height: 90px; }
+  .tax-node { flex-basis: 100%; }
+  .tax-arrow { transform: rotate(90deg); margin: 0 auto; }
+  .var-op { flex-basis: 100%; }
+  .story { grid-template-columns: 1fr 1fr; }
+  .gloss-letter { font-size: 28px; }
+  .hero-cta .btn { flex: 1 1 100%; text-align: center; }
+  .hero-stats { gap: 10px; font-size: 15px; }
+  .ch-num { font-size: 56px; }
+  .table-wrap { margin-left: -4px; margin-right: -4px; }
+  table.data { font-size: 14px; }
+  table.data th, table.data td { padding: 5px 7px; }
+  #toasts { left: 12px; right: 12px; bottom: 12px; }
+  .toast { max-width: none; }
+  .formula-eq { padding: 10px 14px; }
+  .bullets { padding: 0 12px 8px; }
+  .bullets-head { margin-left: -12px; }
+  .box-body { padding: 4px 12px 12px; }
+  .box-label { font-size: 18px; }
+  .nodumb-head { font-size: 24px; }
+}
+@media (max-width: 380px) {
+  .story { grid-template-columns: 1fr; }
+  .eq-acct span:last-child { font-size: 11px; }
+  .sort-bins { grid-template-columns: 1fr !important; }
+}
+/* avoid sticky hover transforms on touch screens */
+@media (hover: none) {
+  .card:hover, .ch-card:hover, .part-card:hover, .path-card:hover, .quiz-opt:hover, .btn:hover, .sort-card:hover { transform: none; }
+}
+/* touch devices of any size (tablets included) */
+@media (pointer: coarse) {
+  input, select, textarea { font-size: 16px !important; }
+  .btn, .btn.tiny, .chip, .o-btn, .seg button { min-height: 44px; }
+  .btn.tiny { padding: 8px 12px; }
+  input[type='range'] { height: 32px; }
+}
+@media (max-width: 600px) {
+  .o-je .o-scroll table { min-width: 0; font-size: 13px; }
+  .o-je td:nth-child(2), .o-je td:nth-child(3), .o-je th:nth-child(2), .o-je th:nth-child(3) { text-align: right; white-space: nowrap; padding-left: 4px; }
+  .je.mini { font-size: 14px; }
+  .je.mini .je-line { grid-template-columns: minmax(0, 1fr) 66px 66px; }
+}
