@@ -1,0 +1,492 @@
+/* PART 3 — Assets, Liabilities & Equity in depth */
+(function () {
+  const HF = window.HF;
+  HF.addPart({ id: 'p3', n: 3, title: 'The Balance Sheet, Line by Line', color: '#3a9d5d', badge: 'part3', desc: 'Cash & bank reconciliation, receivables, inventory, fixed assets, liabilities & payroll, and equity.' });
+
+  /* =============================== CH 13 =============================== */
+  HF.addChapter({
+    id: 'cash-bank',
+    part: 'p3',
+    title: 'Cash, Bank Reconciliation & Controls',
+    subtitle: 'Trust, but verify — the bank statement is your best friend',
+    art: 'reconcile',
+    level: 'Intermediate',
+    minutes: 25,
+    quote: 'Cash is the asset everyone wants to steal. Treat it that way.',
+    goals: ['Explain why book and bank balances differ', 'Prepare a bank reconciliation statement', 'Record the adjusting entries it reveals', 'Run a petty cash (imprest) system and basic cash controls'],
+    blocks: [
+      { t: 'h', text: 'Two diaries of the same money' },
+      { t: 'p', html: 'You record cash in your <b>cash book</b> (the Bank account in your ledger). The bank records the same money in <i>its</i> books and sends you a <b>bank statement</b>. They rarely agree on the same day. Why?' },
+      {
+        t: 'compare',
+        cols: [
+          { t: 'Timing differences (bank side)', color: 'blue', items: ['<b>Deposits in transit</b>: you recorded a deposit; the bank hasn’t yet', '<b>Outstanding (unpresented) cheques</b>: you wrote a cheque; the payee hasn’t cashed it', '→ Adjust the <b>bank balance</b> in the reconciliation. No journal entry.'] },
+          { t: 'Things only the bank knew (book side)', color: 'yellow', items: ['Bank fees & charges', 'Interest earned/charged', 'Direct debits / standing orders', 'Direct credits from customers', 'NSF (bounced) cheques', '→ Adjust the <b>book balance</b> and <b>post a journal entry</b>.'] },
+        ],
+      },
+      { t: 'p', html: 'And of course: <b>errors</b> — by you (most often) or by the bank (rare, but it happens).' },
+      {
+        t: 'widget',
+        name: 'bankrec',
+        opts: {
+          bankOpen: 10000,
+          bookOpen: 10000,
+          bank: [
+            { id: 'k1', d: 'Jun 3', desc: 'Deposit', amt: 2500, m: 'a' },
+            { id: 'k2', d: 'Jun 8', desc: 'Cheque 101', amt: -1800, m: 'b' },
+            { id: 'k3', d: 'Jun 13', desc: 'Transfer AZURE INTERIOR', amt: 3200, m: 'c' },
+            { id: 'k4', d: 'Jun 20', desc: 'Cheque 102', amt: -1500, m: 'd' },
+            { id: 'k7', d: 'Jun 25', desc: 'Direct debit — insurance', amt: -150 },
+            { id: 'k5', d: 'Jun 30', desc: 'Bank service charges', amt: -35 },
+            { id: 'k6', d: 'Jun 30', desc: 'Interest earned', amt: 12 },
+          ],
+          book: [
+            { id: 'b1', d: 'Jun 2', desc: 'Cash sales deposited', amt: 2500, m: 'a' },
+            { id: 'b2', d: 'Jun 5', desc: 'Chq 101 Gear Supply', amt: -1800, m: 'b' },
+            { id: 'b3', d: 'Jun 12', desc: 'Azure Interior payment', amt: 3200, m: 'c' },
+            { id: 'b4', d: 'Jun 18', desc: 'Chq 102 Landlord', amt: -1500, m: 'd' },
+            { id: 'b5', d: 'Jun 28', desc: 'Chq 103 Electric Co', amt: -420 },
+            { id: 'b6', d: 'Jun 30', desc: 'Cash sales deposited', amt: 1900 },
+          ],
+        },
+      },
+      { t: 'p', html: 'The book-side items need journal entries so the ledger shows the true cash balance:' },
+      { t: 'entry', lines: [['Bank Charges Expense', 35, 0], ['Insurance Expense', 150, 0], ['Bank', 0, 185]], narr: 'Bank fees and direct debit per June statement' },
+      { t: 'entry', lines: [['Bank', 12, 0], ['Interest Income', 0, 12]], narr: 'Interest credited by bank' },
+      { t: 'watch', html: 'A <b>bounced (NSF) cheque</b> from a customer means the money never really arrived. Reverse it: <b>Dr Accounts Receivable / Cr Bank</b> — the customer owes you again (plus any bank fee you pass on).' },
+      { t: 'pencil', html: 'Balance per bank statement $8,400. Deposits in transit $1,200. Outstanding cheques $900. Bank charges not yet recorded $25. Balance per books?', items: [{ q: 'What is the adjusted (true) cash balance, and what was the unadjusted book balance?', input: true, a: 'Adjusted bank = 8,400 + 1,200 − 900 = <b>$8,700</b> (true cash). Books before adjustment = 8,700 + 25 = <b>$8,725</b>; after posting the charges, books show 8,700 ✔.' }] },
+
+      { t: 'h', text: 'Petty cash: the imprest system' },
+      { t: 'p', html: 'Small purchases (stamps, coffee, a taxi) are paid from a <b>petty cash</b> box with a fixed float — say $200. Every payment needs a voucher. When it runs low, top it up by exactly what was spent.' },
+      { t: 'entry', title: 'Set up the float', lines: [['Petty Cash', 200, 0], ['Bank', 0, 200]] },
+      { t: 'entry', title: 'Replenish (vouchers: postage 40, cleaning 65, refreshments 52)', lines: [['Postage Expense', 40, 0], ['Cleaning Expense', 65, 0], ['Staff Refreshments', 52, 0], ['Bank', 0, 157]], narr: 'Cash in box was $43; top-up $157 brings it back to $200' },
+      { t: 'sticky', html: 'In the imprest system, the Petty Cash account stays at $200 forever. Expenses are recorded when the box is replenished.' },
+
+      { t: 'h', text: 'Internal controls over cash' },
+      {
+        t: 'cards',
+        cols: 3,
+        items: [
+          { icon: '🙅', t: 'Segregation of duties', d: 'The person who handles cash shouldn’t record it or reconcile the bank.' },
+          { icon: '✍️', t: 'Authorisation', d: 'Payments approved by someone with authority; dual signatures above a limit.' },
+          { icon: '🏦', t: 'Bank daily', d: 'Deposit receipts intact and promptly; minimise cash on hand.' },
+          { icon: '🔢', t: 'Pre-numbered documents', d: 'Receipts, cheques, invoices numbered in sequence — gaps are investigated.' },
+          { icon: '🔁', t: 'Regular reconciliations', d: 'Monthly (or daily) bank reconciliation reviewed by a manager.' },
+          { icon: '🔐', t: 'System access', d: 'In ERPs, restrict who can create vendors, change bank details and approve payments.' },
+        ],
+      },
+      { t: 'odoo', title: 'Bank reconciliation in Odoo', path: 'Accounting > Dashboard > (Bank journal) > Reconcile', html: 'Odoo imports bank statement lines (live bank sync or CSV/OFX/CAMT files). Each line sits in a <b>suspense account</b> until you match it to an invoice, bill, payment or a counterpart account. <b>Reconciliation models</b> can auto-match or auto-write-off recurring items like bank fees. See Chapter 29 for the full workflow.' },
+      { t: 'bullets', items: ['Book and bank balances differ due to timing items, bank-only items and errors.', 'Bank side: + deposits in transit, − outstanding cheques (no entries).', 'Book side: fees, interest, direct debits/credits, NSF cheques (need entries).', 'Both adjusted balances must agree = true cash.', 'Petty cash uses a fixed imprest float replenished from vouchers.', 'Segregation of duties is the #1 cash control.'] },
+    ],
+    quiz: [
+      { q: 'A deposit recorded in your books but not yet on the bank statement is…', o: ['An outstanding cheque', 'A deposit in transit', 'An NSF cheque', 'A bank error'], a: 1, e: 'Add it to the bank balance in the reconciliation.' },
+      { q: 'Which item requires a journal entry in your books?', o: ['Outstanding cheque', 'Deposit in transit', 'Bank service charge', 'A bank error'], a: 2, e: 'Only items the bank knew about (fees, interest, NSF, direct debits) need entries.' },
+      { q: 'Bank $5,000; deposits in transit $800; outstanding cheques $1,100. Adjusted bank balance?', o: ['$4,700', '$6,900', '$5,300', '$3,100'], a: 0, e: '5,000 + 800 − 1,100 = 4,700.' },
+      { q: 'A customer’s cheque bounces. Entry:', o: ['Dr Bank / Cr AR', 'Dr AR / Cr Bank', 'Dr Bad Debt / Cr Bank', 'No entry'], a: 1, e: 'Reinstate the receivable; remove the cash.' },
+      { q: 'In an imprest petty cash system, expenses are recorded when…', o: ['The float is set up', 'The fund is replenished', 'Each coffee is bought', 'At year-end only'], a: 1, e: 'Replenishment records the expenses from vouchers.' },
+      { q: 'The most important cash control is…', o: ['Keeping lots of cash on hand', 'Segregation of duties', 'Using round numbers', 'Never reconciling'], a: 1, e: 'Separate custody, recording and reconciliation.' },
+    ],
+    cards: [
+      ['Bank reconciliation', 'Process of explaining differences between book and bank cash balances.'],
+      ['Deposit in transit', 'Deposit recorded in books but not yet by the bank.'],
+      ['Outstanding cheque', 'Cheque issued and recorded, but not yet presented to the bank.'],
+      ['NSF cheque', 'Non-sufficient funds — a bounced cheque; reinstate the receivable.'],
+      ['Imprest system', 'Petty cash with a fixed float, replenished by the amount spent.'],
+      ['Segregation of duties', 'Separating custody, authorisation, recording and reconciliation.'],
+    ],
+  });
+
+  /* =============================== CH 14 =============================== */
+  HF.addChapter({
+    id: 'receivables',
+    part: 'p3',
+    title: 'Receivables & Bad Debts',
+    subtitle: 'Selling on credit is easy. Getting paid is the hard part.',
+    art: 'invoice',
+    level: 'Intermediate',
+    minutes: 25,
+    quote: 'A sale isn’t finished until the money is in the bank.',
+    goals: ['Record credit sales, returns and discounts', 'Use the allowance method and aging schedule', 'Write off and recover bad debts', 'Understand expected credit losses (IFRS 9) and DSO'],
+    blocks: [
+      { t: 'h', text: 'Credit sales in a nutshell' },
+      { t: 'entry', title: 'Sale on credit', lines: [['Accounts Receivable — Azure Interior', 5000, 0], ['Sales Revenue', 0, 5000]] },
+      { t: 'entry', title: 'Customer returns goods worth $400 (credit note)', lines: [['Sales Returns & Allowances', 400, 0], ['Accounts Receivable — Azure Interior', 0, 400]] },
+      { t: 'entry', title: 'Customer pays early and takes a 2% discount (terms 2/10, n/30)', lines: [['Bank', 4508, 0], ['Sales Discounts', 92, 0], ['Accounts Receivable — Azure Interior', 0, 4600]] },
+      { t: 'sticky', side: 'right', html: '<b>2/10, n/30</b> = 2% discount if paid within 10 days; otherwise the full amount is due in 30 days.' },
+      { t: 'p', html: 'Sales returns and discounts are <b>contra-revenue</b> accounts — they reduce revenue but keep the original sales figure visible.' },
+
+      { t: 'h', text: 'Some customers won’t pay' },
+      { t: 'p', html: 'Selling on credit means some losses are inevitable. Two ways to account for them:' },
+      {
+        t: 'compare',
+        cols: [
+          { t: 'Direct write-off method', color: 'red', items: ['Wait until a specific debt is hopeless, then Dr Bad Debt Expense / Cr AR', 'Simple, used by tiny businesses and some tax rules', '✘ Violates matching — the loss lands in a later period than the sale', '✘ Overstates receivables in the meantime'] },
+          { t: 'Allowance method (required by GAAP/IFRS)', color: 'green', items: ['Estimate expected losses each period', 'Dr Bad Debt (Impairment) Expense / Cr Allowance for Doubtful Accounts', 'Receivables shown <b>net</b> of the allowance', '✔ Matching and prudence'] },
+        ],
+      },
+      { t: 'h3', text: 'Estimating with an aging schedule' },
+      {
+        t: 'table',
+        caption: 'Aged receivables at 31 Dec',
+        head: ['Age bucket', 'Balance', 'Expected loss %', 'Allowance needed'],
+        rows: [
+          ['Not yet due', '$40,000', '1%', '$400'],
+          ['1–30 days overdue', '$12,000', '5%', '$600'],
+          ['31–60 days', '$5,000', '15%', '$750'],
+          ['61–90 days', '$2,000', '30%', '$600'],
+          ['Over 90 days', '$1,000', '60%', '$600'],
+          { _cls: 'tot', cells: ['Total', '$60,000', '', '$2,950'] },
+        ],
+      },
+      { t: 'p', html: 'If the Allowance account already has a $700 credit balance, the adjusting entry tops it up to $2,950:' },
+      { t: 'entry', lines: [['Bad Debt Expense', 2250, 0], ['Allowance for Doubtful Accounts', 0, 2250]], narr: 'Adjust allowance to required balance (2,950 − 700)' },
+      { t: 'p', html: 'On the balance sheet: Accounts receivable $60,000 less allowance $2,950 = <b>net receivables $57,050</b>.' },
+      { t: 'h3', text: 'Write-off and recovery' },
+      { t: 'entry', title: 'Write off Ready Mat’s $800 balance (they went bankrupt)', lines: [['Allowance for Doubtful Accounts', 800, 0], ['Accounts Receivable — Ready Mat', 0, 800]], narr: 'No expense now — it was expensed when the allowance was created' },
+      { t: 'entry', title: 'Surprise! Ready Mat later pays $300', lines: [['Accounts Receivable — Ready Mat', 300, 0], ['Allowance for Doubtful Accounts', 0, 300]], narr: 'Reinstate' },
+      { t: 'entry', lines: [['Bank', 300, 0], ['Accounts Receivable — Ready Mat', 0, 300]], narr: 'Record collection' },
+      { t: 'watch', html: 'Under the allowance method, a write-off does <b>not</b> change net receivables or profit — both the gross receivable and the allowance fall by the same amount. The hit to profit happened when the allowance was estimated.' },
+      { t: 'p', html: '<b>IFRS 9</b> calls this the <b>expected credit loss (ECL)</b> model: for trade receivables, companies typically use the <b>simplified approach</b> — lifetime expected losses, often via a provision matrix like the aging table above, adjusted for forward-looking information (e.g., a recession). US GAAP’s <b>CECL</b> model is similar in spirit.' },
+
+      { t: 'h', text: 'Measuring collection' },
+      { t: 'formula', html: 'DSO = Receivables ÷ Revenue × 365', note: 'Days sales outstanding. Max: 14,500 ÷ 245,000 × 365 ≈ 22 days.' },
+      { t: 'formula', html: 'Receivables turnover = Revenue ÷ Average receivables' },
+      { t: 'brain', html: 'Max’s payment terms are 30 days, but DSO jumps from 22 to 48 days. List three possible causes, and one thing Max could do about each.' },
+      { t: 'odoo', title: 'Receivables in Odoo', path: 'Accounting > Reporting > Aged Receivable', html: '<ul><li><b>Payment terms</b> (e.g., 30 Days, 2/10 Net 30 with early payment discount) compute due dates automatically.</li><li><b>Credit notes</b> are created from a posted invoice (Credit Note / Reverse).</li><li><b>Follow-up reports</b> send reminder emails/letters by overdue level.</li><li>The <b>Aged Receivable</b> report gives you the aging schedule.</li><li>Write-offs: reconcile the invoice against a write-off account (e.g., via a reconciliation model or the payment “Mark as fully paid” difference option). Allowance entries are usually posted as manual Misc entries.</li></ul>' },
+      { t: 'bullets', items: ['Credit sale: Dr AR / Cr Sales; returns and discounts are contra-revenue.', 'Allowance method estimates losses each period; direct write-off doesn’t match.', 'Aging schedule sets the required allowance balance.', 'Write-offs hit the allowance, not expense (under the allowance method).', 'IFRS 9 ECL: lifetime expected losses for trade receivables (simplified approach).', 'DSO tracks how fast customers pay.'] },
+    ],
+    quiz: [
+      { q: 'Under the allowance method, writing off a specific bad debt…', o: ['Increases bad debt expense', 'Reduces net receivables', 'Does not change net receivables', 'Increases revenue'], a: 2, e: 'Gross AR and the allowance fall equally.' },
+      { q: 'Allowance required per aging: $4,000. Existing allowance credit balance: $1,500. Adjusting entry amount?', o: ['$4,000', '$5,500', '$2,500', '$1,500'], a: 2, e: 'Top up by 4,000 − 1,500 = 2,500.' },
+      { q: 'The direct write-off method is weak because it…', o: ['Is too complex', 'Violates matching', 'Overstates expenses', 'Is required by IFRS'], a: 1, e: 'The loss is recognised in a later period than the related sale.' },
+      { q: 'Terms 2/10, n/30 mean…', o: ['2% interest after 10 days', '2% discount if paid within 10 days, else due in 30', 'Pay 2 instalments in 30 days', '10% discount after 2 days'], a: 1, e: 'Classic early-payment discount.' },
+      { q: 'Receivables $30,000, annual revenue $365,000. DSO?', o: ['30 days', '12 days', '365 days', '10 days'], a: 0, e: '30,000 ÷ 365,000 × 365 = 30.' },
+      { q: 'Allowance for Doubtful Accounts is a…', o: ['Liability', 'Contra-asset', 'Expense', 'Revenue'], a: 1, e: 'It reduces receivables; normal credit balance.' },
+    ],
+    cards: [
+      ['Accounts receivable', 'Amounts owed by customers for credit sales.'],
+      ['Allowance for doubtful accounts', 'Contra-asset estimating uncollectible receivables.'],
+      ['Aging schedule', 'Receivables grouped by days overdue to estimate losses.'],
+      ['Direct write-off method', 'Expense bad debts only when a specific account is deemed uncollectible.'],
+      ['Expected credit loss (ECL)', 'IFRS 9 model: recognise expected (not just incurred) credit losses.'],
+      ['DSO', 'Days sales outstanding = receivables ÷ revenue × 365.'],
+    ],
+  });
+
+  /* =============================== CH 15 =============================== */
+  HF.addChapter({
+    id: 'inventory',
+    part: 'p3',
+    title: 'Inventory & Cost of Goods Sold',
+    subtitle: 'FIFO, LIFO, AVCO — same bikes, different profits',
+    art: 'boxes',
+    level: 'Intermediate',
+    minutes: 30,
+    quote: 'Inventory is money sitting on a shelf, getting dusty.',
+    goals: ['Compare perpetual and periodic systems', 'Calculate COGS and ending inventory using FIFO, LIFO and weighted average', 'Apply lower of cost and net realisable value', 'See how inventory errors affect two periods'],
+    blocks: [
+      { t: 'h', text: 'What goes into inventory cost?' },
+      { t: 'p', html: 'Inventory cost includes <b>everything needed to get goods to their present location and condition</b>: purchase price, import duties, non-refundable taxes, freight-in, handling — less trade discounts and rebates. For manufacturers: raw materials, direct labour and production overheads.' },
+      { t: 'p', html: 'Not included: storage after production (unless necessary), abnormal waste, selling costs, admin overheads — these are expensed.' },
+
+      { t: 'h', text: 'Perpetual vs periodic' },
+      {
+        t: 'compare',
+        cols: [
+          { t: 'Perpetual', color: 'green', items: ['Inventory updated with <b>every</b> purchase and sale', 'COGS recorded at each sale (Dr COGS / Cr Inventory)', 'Always know stock on hand — counts find shrinkage', 'Standard in ERPs (Odoo with automated valuation)'] },
+          { t: 'Periodic', color: 'yellow', items: ['Purchases go to a Purchases account', 'Count stock at period end', 'COGS = opening + purchases − closing', 'Simpler, but no real-time view; theft hidden inside COGS'] },
+        ],
+      },
+      { t: 'entry', title: 'Perpetual — sell a bike costing $400 for $650', lines: [['Accounts Receivable', 650, 0], ['Sales Revenue', 0, 650]] },
+      { t: 'entry', lines: [['Cost of Goods Sold', 400, 0], ['Inventory', 0, 400]] },
+
+      { t: 'h', text: 'Cost flow assumptions' },
+      { t: 'p', html: 'When identical items are bought at different prices, which cost goes to COGS? You choose a <b>cost formula</b>:' },
+      {
+        t: 'cards',
+        cols: 4,
+        items: [
+          { icon: '➡️', t: 'FIFO', d: 'First in, first out. Oldest costs → COGS; newest costs stay in inventory. Allowed under IFRS & GAAP.', color: 'blue' },
+          { icon: '⬅️', t: 'LIFO', d: 'Last in, first out. Newest costs → COGS. <b>Banned under IFRS</b>; allowed under US GAAP (tax reasons).', color: 'red' },
+          { icon: '⚖️', t: 'Weighted average (AVCO)', d: 'Blend all costs. Perpetual version (“moving average”) recalculates after each purchase.', color: 'green' },
+          { icon: '🏷️', t: 'Specific identification', d: 'Track the actual cost of each unique item (cars, jewellery, custom bikes).', color: 'yellow' },
+        ],
+      },
+      { t: 'widget', name: 'inventory' },
+      { t: 'pencil', html: 'Using the simulator data (10 @ $10, 10 @ $12, sell 12, 10 @ $15, sell 8):', items: [{ q: 'FIFO ending inventory: how many units, and at what cost?', a: '10 units left, all from the last batch @ $15 = <b>$150</b>. COGS: first sale 10×$10 + 2×$12 = $124; second sale 8×$12 = $96; total <b>$220</b>. Check: 220 + 150 = $370 = total cost of goods available ✔' }, { q: 'Why does LIFO give lower profit when prices rise?', a: 'LIFO charges the newest (highest) costs to COGS, so COGS is higher and gross profit lower — also lower taxable income, which is why some US companies like it.' }] },
+      { t: 'watch', html: 'Whatever method you pick, <b>total cost of goods available for sale</b> is the same. The method just decides how it splits between COGS (P&L) and ending inventory (balance sheet). And per the consistency principle, don’t switch back and forth.' },
+
+      { t: 'h', text: 'Lower of cost and net realisable value' },
+      { t: 'p', html: 'If inventory is damaged, obsolete or prices drop, you can’t carry it above what you’ll get for it. <b>NRV</b> = estimated selling price − costs to complete and sell. Write down to NRV:' },
+      { t: 'entry', title: '10 last-season bikes cost $400 each; can now sell for $320 with $20 selling cost each', lines: [['Inventory Write-down Expense (COGS)', 1000, 0], ['Inventory', 0, 1000]], narr: 'NRV 300 vs cost 400 → write down 100 × 10' },
+      { t: 'p', html: 'IFRS (IAS 2) allows reversing write-downs if NRV recovers (up to original cost). US GAAP uses “lower of cost and NRV” for FIFO/average (and market for LIFO) and does not allow reversals.' },
+
+      { t: 'h', text: 'Inventory errors: a two-year story' },
+      {
+        t: 'table',
+        head: ['Error: 2026 closing inventory overstated by $5,000', '2026', '2027'],
+        rows: [
+          ['Closing inventory', 'Overstated +5,000', 'Correct'],
+          ['Opening inventory', 'Correct', 'Overstated +5,000'],
+          ['COGS', 'Understated −5,000', 'Overstated +5,000'],
+          ['Net profit', '<b>Overstated +5,000</b>', '<b>Understated −5,000</b>'],
+          ['Retained earnings at year-end', 'Overstated', 'Correct (self-corrects!)'],
+        ],
+      },
+      { t: 'say', who: 'audrey', html: 'That’s why I attend the year-end stock count. Inflate closing inventory and you get a profit boost this year… and a nasty surprise next year.' },
+      { t: 'odoo', title: 'Inventory valuation in Odoo', path: 'Inventory > Configuration > Product Categories', html: 'Each product category sets a <b>costing method</b> (Standard Price, Average Cost (AVCO) or FIFO — no LIFO) and an <b>inventory valuation</b> (Manual/periodic or Automated/perpetual). With automated valuation, every receipt and delivery creates journal entries through stock valuation and interim accounts. Details in Chapter 30.' },
+      { t: 'bullets', items: ['Inventory cost = purchase price + costs to bring it to sale-ready condition.', 'Perpetual updates continuously; periodic computes COGS at period end.', 'FIFO, weighted average and specific identification are IFRS-allowed; LIFO only under US GAAP.', 'Rising prices: FIFO → higher profit & inventory; LIFO → lower profit.', 'Write inventory down to NRV when below cost.', 'Inventory errors reverse themselves in the next period.'] },
+    ],
+    quiz: [
+      { q: 'Which cost formula is NOT permitted under IFRS?', o: ['FIFO', 'Weighted average', 'LIFO', 'Specific identification'], a: 2, e: 'IAS 2 prohibits LIFO.' },
+      { q: 'In a period of rising prices, FIFO gives…', o: ['Lower profit than LIFO', 'Higher profit than LIFO', 'The same profit', 'No COGS'], a: 1, e: 'Older, cheaper costs go to COGS.' },
+      { q: 'Which cost is included in inventory?', o: ['Freight-in', 'Advertising', 'Sales commissions', 'Admin salaries'], a: 0, e: 'Costs to bring goods to their location and condition.' },
+      { q: 'Cost $50, expected selling price $45, selling costs $3. Inventory should be carried at…', o: ['$50', '$45', '$42', '$48'], a: 2, e: 'NRV = 45 − 3 = 42, lower than cost.' },
+      { q: 'Overstated closing inventory in Year 1 causes Year 2 profit to be…', o: ['Overstated', 'Understated', 'Correct', 'Doubled'], a: 1, e: 'Year 2 opening inventory is too high → COGS too high.' },
+      { q: 'In a perpetual system, COGS is recorded…', o: ['Only at year-end', 'At each sale', 'Never', 'When purchases are paid'], a: 1, e: 'Dr COGS / Cr Inventory with every sale.' },
+      { q: 'Which costing methods does Odoo offer for product categories?', o: ['FIFO, LIFO, AVCO', 'Standard, AVCO, FIFO', 'Only FIFO', 'Specific ID only'], a: 1, e: 'Odoo supports Standard Price, Average Cost and FIFO.' },
+    ],
+    cards: [
+      ['FIFO', 'First in, first out: oldest costs go to COGS first.'],
+      ['LIFO', 'Last in, first out: newest costs go to COGS. Not allowed under IFRS.'],
+      ['Weighted average (AVCO)', 'Cost per unit = total cost ÷ total units; moving average in perpetual systems.'],
+      ['Net realisable value', 'Estimated selling price − costs to complete and sell.'],
+      ['Perpetual inventory', 'Continuous updating of inventory and COGS with each transaction.'],
+      ['Periodic inventory', 'COGS computed at period end using a physical count.'],
+    ],
+  });
+
+  /* =============================== CH 16 =============================== */
+  HF.addChapter({
+    id: 'fixed-assets',
+    part: 'p3',
+    title: 'Fixed Assets & Depreciation',
+    subtitle: 'Spreading the cost of the van over the years it actually works',
+    art: 'machine',
+    level: 'Intermediate',
+    minutes: 30,
+    quote: 'Depreciation isn’t about what the van is <i>worth</i>. It’s about spreading what it <i>cost</i> over the years it helps you.',
+    goals: ['Decide what to capitalise vs expense', 'Calculate straight-line, declining balance, SYD and units-of-production depreciation', 'Record disposals with gains or losses', 'Understand impairment, revaluation and intangible assets'],
+    blocks: [
+      { t: 'h', text: 'Capital vs revenue expenditure' },
+      {
+        t: 'compare',
+        cols: [
+          { t: 'Capitalise (asset)', color: 'blue', items: ['Benefit lasts more than one year', 'Purchase price + import duties + delivery + installation + testing + professional fees', 'Improvements that extend life or capacity', 'Example: new van, shop fit-out, engine replacement that adds 3 years'] },
+          { t: 'Expense (P&L now)', color: 'red', items: ['Benefit used up this period', 'Routine repairs and maintenance', 'Training staff to use a machine', 'Items below the capitalisation threshold (materiality)', 'Example: oil change, new tyres, a $30 drill'] },
+        ],
+      },
+      { t: 'pencil', html: 'Max buys a bike-repair stand: price $4,000, delivery $150, installation $250, first year’s maintenance contract $300, staff training $200.', items: [{ q: 'What is the cost of the asset?', input: true, a: '4,000 + 150 + 250 = <b>$4,400</b>. Maintenance ($300) and training ($200) are expenses.' }] },
+
+      { t: 'h', text: 'Depreciation methods' },
+      { t: 'formula', html: 'Depreciable amount = Cost − Residual (salvage) value', note: 'Spread over the useful life using a method that reflects how benefits are consumed.' },
+      {
+        t: 'cards',
+        cols: 2,
+        items: [
+          { icon: '📏', t: 'Straight-line', d: '(Cost − Residual) ÷ Life. Same expense every year. Most common.', color: 'blue' },
+          { icon: '📉', t: 'Declining balance', d: 'Book value × rate (double-declining = 2 ÷ life). Big expense early, smaller later. Good for tech and vehicles.', color: 'red' },
+          { icon: '🔢', t: 'Sum-of-the-years’ digits', d: '(Cost − Residual) × remaining life ÷ sum of years (5-yr life: 5+4+3+2+1 = 15). Accelerated, smoother than DDB.', color: 'green' },
+          { icon: '⚙️', t: 'Units of production', d: '(Cost − Residual) ÷ total expected units × units this year. Matches usage (machines, mines, vehicles by km).', color: 'yellow' },
+        ],
+      },
+      { t: 'widget', name: 'depreciation' },
+      { t: 'pencil', items: [{ q: 'A machine costs $60,000, residual $6,000, expected to produce 120,000 units. This year it made 30,000 units. Units-of-production depreciation?', input: true, a: '(60,000 − 6,000) ÷ 120,000 = $0.45/unit × 30,000 = <b>$13,500</b>.' }] },
+      { t: 'sticky', html: 'Land is <b>not</b> depreciated — it doesn’t wear out. Buy a building with land? Split the cost and depreciate only the building.' },
+      { t: 'h3', text: 'Partial years' },
+      { t: 'p', html: 'Assets bought mid-year are depreciated for the fraction of the year owned (by month or day), unless the company uses a convention like “half-year” (common for tax). Odoo prorates by default from the acquisition date (configurable).' },
+
+      { t: 'h', text: 'Disposals: gains and losses' },
+      { t: 'p', html: 'When you sell or scrap an asset: remove its <b>cost</b> and <b>accumulated depreciation</b>, record what you received, and the difference is a gain or loss.' },
+      { t: 'formula', html: 'Gain/(loss) = Proceeds − Carrying amount', note: 'Carrying amount (book value) = cost − accumulated depreciation' },
+      { t: 'entry', title: 'Old van: cost 12,000, accumulated depreciation 9,000, sold for 4,500', lines: [['Bank', 4500, 0], ['Accumulated Depreciation — Vehicles', 9000, 0], ['Vehicles (cost)', 0, 12000], ['Gain on Disposal', 0, 1500]], narr: 'Carrying amount 3,000; proceeds 4,500 → gain 1,500' },
+      { t: 'watch', html: 'Remember to record depreciation <b>up to the disposal date</b> before computing the gain or loss.' },
+
+      { t: 'h', text: 'Impairment & revaluation' },
+      { t: 'list', items: ['<b>Impairment</b>: if an asset’s carrying amount exceeds its <b>recoverable amount</b> (higher of fair value less costs to sell and value in use), write it down: Dr Impairment Loss / Cr Accumulated Impairment (or the asset). IFRS allows reversal (except goodwill); US GAAP does not for assets held and used.', '<b>Revaluation model</b> (IFRS only, IAS 16): carry a class of assets (e.g., land & buildings) at fair value. Increases go to OCI (revaluation surplus); decreases to P&L unless reversing a previous surplus. US GAAP uses cost only.', '<b>Componentisation</b> (IFRS): depreciate significant parts separately — e.g., an aircraft’s engines vs its body.'] },
+
+      { t: 'h', text: 'Intangible assets' },
+      { t: 'cards', cols: 3, items: [{ icon: '💡', t: 'Patents, trademarks, licences', d: 'Amortised over their useful life (usually straight-line).' }, { icon: '💻', t: 'Software', d: 'Purchased or developed (development phase only) → capitalise & amortise.' }, { icon: '🤝', t: 'Goodwill', d: 'Arises only when you buy a business for more than the fair value of its net assets. Not amortised under IFRS — tested for impairment annually.' }] },
+      { t: 'p', html: 'Research costs are always expensed. Development costs are capitalised under IFRS (IAS 38) only when strict criteria are met (technical feasibility, intention & ability to complete, future benefits…). Internally generated brands and goodwill are never capitalised.' },
+      { t: 'odoo', title: 'Assets in Odoo', path: 'Accounting > Accounting > Assets', html: 'Odoo Enterprise’s Assets module creates a <b>depreciation board</b> per asset (methods: straight-line, declining, declining then straight-line; by months or years; prorata). Configure an <b>asset model</b> on an account (e.g., Vehicles) so posting a vendor bill on that account can create the asset automatically (draft or validated). Depreciation entries are posted on schedule; selling or disposing of an asset generates the gain/loss entry. See Chapter 30.' },
+      { t: 'bullets', items: ['Capitalise costs that bring an asset to working condition; expense routine repairs.', 'Depreciation allocates cost − residual over useful life.', 'Methods: straight-line, declining balance, SYD, units of production.', 'Land isn’t depreciated.', 'Disposal gain/loss = proceeds − carrying amount.', 'Impairment writes assets down to recoverable amount; IFRS allows a revaluation model.', 'Intangibles are amortised; goodwill is impairment-tested.'] },
+    ],
+    quiz: [
+      { q: 'Which cost should be capitalised as part of a machine?', o: ['Annual maintenance', 'Installation and testing', 'Staff training', 'Insurance after installation'], a: 1, e: 'Costs to bring the asset to working condition are capitalised.' },
+      { q: 'Cost 20,000, residual 2,000, life 6 years. Straight-line annual depreciation?', o: ['3,333', '3,000', '2,000', '3,667'], a: 1, e: '(20,000 − 2,000) ÷ 6 = 3,000.' },
+      { q: 'Double-declining rate for a 5-year asset is…', o: ['20%', '40%', '10%', '50%'], a: 1, e: '2 ÷ 5 = 40% of book value each year.' },
+      { q: 'Asset cost 10,000, accumulated depreciation 7,000, sold for 2,000. Result?', o: ['Gain 2,000', 'Loss 1,000', 'Gain 1,000', 'Loss 3,000'], a: 1, e: 'Carrying amount 3,000; proceeds 2,000 → loss 1,000.' },
+      { q: 'Which asset is NOT depreciated?', o: ['Building', 'Land', 'Delivery van', 'Computer'], a: 1, e: 'Land has an indefinite life.' },
+      { q: 'Under IFRS, goodwill is…', o: ['Amortised over 10 years', 'Tested for impairment annually, not amortised', 'Expensed immediately', 'Revalued upward yearly'], a: 1, e: 'IAS 36 annual impairment test.' },
+      { q: 'Research costs are…', o: ['Always capitalised', 'Always expensed', 'Capitalised if successful', 'Treated as inventory'], a: 1, e: 'Only qualifying development costs may be capitalised under IFRS.' },
+    ],
+    cards: [
+      ['Depreciation', 'Systematic allocation of an asset’s depreciable amount over its useful life.'],
+      ['Carrying amount', 'Cost − accumulated depreciation (and impairment).'],
+      ['Residual value', 'Estimated amount obtainable at the end of an asset’s life.'],
+      ['Straight-line', '(Cost − residual) ÷ useful life.'],
+      ['Double-declining balance', 'Book value × (2 ÷ life) each year.'],
+      ['Impairment', 'Write-down when carrying amount exceeds recoverable amount.'],
+      ['Capital expenditure', 'Spending that creates or improves a long-term asset.'],
+    ],
+  });
+
+  /* =============================== CH 17 =============================== */
+  HF.addChapter({
+    id: 'liabilities-payroll',
+    part: 'p3',
+    title: 'Liabilities, Payroll & Loans',
+    subtitle: 'What you owe, to whom, and when it’s due',
+    art: 'loan',
+    level: 'Intermediate',
+    minutes: 30,
+    quote: 'A liability is a promise. Accounting makes sure you can see all your promises at once.',
+    goals: ['Record payables, accruals and payroll', 'Account for loans and interest (amortisation)', 'Distinguish provisions from contingent liabilities', 'Understand bonds at a premium or discount'],
+    blocks: [
+      { t: 'h', text: 'The liability family' },
+      { t: 'cards', cols: 3, items: [{ icon: '📥', t: 'Accounts payable', d: 'Bills from suppliers for goods/services received.' }, { icon: '⏳', t: 'Accrued liabilities', d: 'Expenses incurred but not yet billed: wages, utilities, interest.' }, { icon: '🎁', t: 'Unearned revenue', d: 'Customer prepayments, gift cards, subscriptions.' }, { icon: '🏛️', t: 'Taxes payable', d: 'VAT/GST output tax, payroll withholdings, income tax.' }, { icon: '🏦', t: 'Borrowings', d: 'Overdrafts, loans, bonds, lease liabilities.' }, { icon: '🛡️', t: 'Provisions', d: 'Liabilities of uncertain timing or amount: warranties, restructuring, legal claims.' }] },
+
+      { t: 'h', text: 'Payroll: more than just wages' },
+      { t: 'p', html: 'When Max pays his mechanic, the gross salary isn’t what lands in their bank. The employer withholds taxes and contributions and pays them to the government on the employee’s behalf, plus pays its own <b>employer contributions</b>. Names differ by country (PAYE, TDS, FICA, PF/ESI, social security, pension…) but the accounting pattern is universal.' },
+      {
+        t: 'table',
+        caption: 'Monthly payroll (illustrative rates)',
+        head: ['Item', 'Amount'],
+        rows: [
+          ['Gross salary', '$4,000'],
+          ['− Employee income tax withheld', '($600)'],
+          ['− Employee social security / pension (8%)', '($320)'],
+          { _cls: 'tot', cells: ['<b>Net pay to employee</b>', '<b>$3,080</b>'] },
+          ['Employer social security / pension (10%)', '$400 (extra cost to Max)'],
+        ],
+      },
+      { t: 'entry', title: 'Record salaries', lines: [['Salaries Expense', 4000, 0], ['Income Tax Withheld Payable', 0, 600], ['Social Security Payable (employee)', 0, 320], ['Net Salaries Payable', 0, 3080]] },
+      { t: 'entry', title: 'Employer contributions', lines: [['Payroll Tax / Employer Contribution Expense', 400, 0], ['Social Security Payable (employer)', 0, 400]] },
+      { t: 'entry', title: 'Pay employee and remit to government', lines: [['Net Salaries Payable', 3080, 0], ['Income Tax Withheld Payable', 600, 0], ['Social Security Payable (employee)', 320, 0], ['Social Security Payable (employer)', 400, 0], ['Bank', 0, 4400]] },
+      { t: 'brain', html: 'The true cost of this employee to Max is $4,400 a month, not $4,000 — and certainly not the $3,080 the employee sees. What other costs might a business forget when budgeting for a new hire? (Think: leave, bonuses, equipment, training.)' },
+      { t: 'odoo', html: 'Odoo <b>Payroll</b> (Enterprise, localised for many countries) computes payslips from salary structures and rules, then posts the journal entries (expense, withholdings, net payable) to Accounting automatically.' },
+
+      { t: 'h', text: 'Loans and interest' },
+      { t: 'p', html: 'A loan is recorded at the amount borrowed. Each payment splits into <b>interest</b> (expense) and <b>principal</b> (reduces the liability). With equal instalments (an annuity / EMI), interest is high at first and falls over time.' },
+      { t: 'widget', name: 'loan' },
+      { t: 'entry', title: 'Year 1 instalment (from the default schedule)', lines: [['Interest Expense', 8000, 0], ['Bank Loan', 17045.65, 0], ['Bank', 0, 25045.65]] },
+
+      { t: 'h', text: 'Provisions vs contingent liabilities' },
+      {
+        t: 'table',
+        head: ['Situation', 'Treatment (IAS 37)'],
+        rows: [
+          ['Present obligation, outflow <b>probable</b> (>50%), <b>reliable estimate</b>', '<b>Recognise a provision</b>: Dr Expense / Cr Provision'],
+          ['Possible obligation, or probable but can’t estimate reliably', '<b>Disclose</b> as a contingent liability in the notes'],
+          ['Outflow <b>remote</b>', 'Nothing'],
+          ['Possible inflow (contingent asset)', 'Disclose only if probable; recognise only when virtually certain'],
+        ],
+      },
+      { t: 'p', html: '<b>Example — warranties:</b> Max offers 1-year warranties. History shows repairs cost about 2% of sales. With $245,000 of sales: provision $4,900.' },
+      { t: 'entry', lines: [['Warranty Expense', 4900, 0], ['Warranty Provision', 0, 4900]], narr: 'Estimated warranty costs on 2026 sales' },
+      { t: 'p', html: 'When repairs happen, Dr Warranty Provision / Cr Inventory or Bank. (US GAAP uses “probable” as a higher threshold — roughly “likely to occur”.)' },
+
+      { t: 'h', text: 'Bonds in one page' },
+      { t: 'p', html: 'Big companies borrow by issuing <b>bonds</b>: promises to pay a fixed coupon and the face value at maturity. If the market interest rate differs from the coupon rate, the bond sells at a different price:' },
+      { t: 'compare', cols: [{ t: 'Discount', color: 'red', items: ['Coupon rate < market rate', 'Investors pay less than face value', 'Discount amortised → extra interest expense over life'] }, { t: 'Par', color: 'yellow', items: ['Coupon = market rate', 'Price = face value'] }, { t: 'Premium', color: 'green', items: ['Coupon > market rate', 'Investors pay more than face value', 'Premium amortised → reduces interest expense'] }] },
+      { t: 'p', html: 'The price is the <b>present value</b> of future coupons and principal at the market rate — see the time-value-of-money tool in Chapter 23. Amortised cost using the <b>effective interest method</b> is the standard approach (IFRS 9 / ASC 835).' },
+      { t: 'bullets', items: ['Liabilities: payables, accruals, unearned revenue, taxes, borrowings, provisions.', 'Payroll: gross − withholdings = net; employer contributions are an extra expense.', 'Loan payments split into interest (expense) and principal (liability reduction).', 'Provision if probable + reliable estimate; otherwise disclose or ignore.', 'Bonds issue at discount/premium when coupon ≠ market rate.'] },
+    ],
+    quiz: [
+      { q: 'Employee income tax withheld from salaries is…', o: ['An expense of the employer', 'A liability until paid to the government', 'Revenue', 'An asset'], a: 1, e: 'The employer holds it on behalf of the employee and the tax authority.' },
+      { q: 'Gross pay 5,000; employee withholdings 1,100. Net pay?', o: ['6,100', '3,900', '5,000', '1,100'], a: 1, e: '5,000 − 1,100 = 3,900.' },
+      { q: 'A loan payment of 12,000 includes 2,000 interest. The loan liability decreases by…', o: ['12,000', '10,000', '2,000', '14,000'], a: 1, e: 'Only the principal (10,000) reduces the loan.' },
+      { q: 'A lawsuit is probable to be lost, and the loss can be reliably estimated at $50k. You should…', o: ['Ignore it', 'Disclose only', 'Recognise a provision', 'Recognise a contingent asset'], a: 2, e: 'Probable + reliable estimate → provision.' },
+      { q: 'A bond with a coupon rate below the market rate is issued at…', o: ['A premium', 'Par', 'A discount', 'Zero'], a: 2, e: 'Investors demand a lower price to earn the market return.' },
+      { q: 'Employer social security contributions are…', o: ['Deducted from employee pay', 'An additional employer expense', 'Not recorded', 'Revenue'], a: 1, e: 'They’re a cost on top of gross salary.' },
+    ],
+    cards: [
+      ['Accrued liability', 'Expense incurred but not yet paid or billed.'],
+      ['Payroll withholding', 'Amounts deducted from employee pay and remitted to authorities.'],
+      ['Provision', 'Liability of uncertain timing or amount, recognised when probable and reliably measurable.'],
+      ['Contingent liability', 'Possible obligation disclosed in notes, not recognised.'],
+      ['Amortisation (loan)', 'Gradual repayment of principal; interest declines over time.'],
+      ['Bond discount', 'Issue price below face value because coupon < market rate.'],
+    ],
+  });
+
+  /* =============================== CH 18 =============================== */
+  HF.addChapter({
+    id: 'equity',
+    part: 'p3',
+    title: 'Equity: Owners, Partners & Shareholders',
+    subtitle: 'Who owns the business — and how their stake changes',
+    art: 'shares',
+    level: 'Intermediate',
+    minutes: 25,
+    quote: 'Equity is the reward for taking the biggest risk: being last in line.',
+    goals: ['Compare equity in sole proprietorships, partnerships and companies', 'Record share issues, dividends, treasury shares and bonus issues/splits', 'Explain retained earnings and reserves'],
+    blocks: [
+      { t: 'h', text: 'Three ways to own a business' },
+      {
+        t: 'compare',
+        cols: [
+          { t: 'Sole proprietor', color: 'yellow', items: ['One owner (Max!)', '<b>Capital</b> account + <b>Drawings</b>', 'Unlimited personal liability (usually)', 'Profit taxed as the owner’s income'] },
+          { t: 'Partnership', color: 'blue', items: ['Two or more partners', 'Separate capital & current accounts per partner', 'Profit split per agreement (ratios, salaries, interest on capital)', 'Partnership deed is key'] },
+          { t: 'Company / corporation', color: 'green', items: ['Owned by shareholders; separate legal entity', 'Limited liability', 'Share capital + share premium + retained earnings + reserves', 'Dividends, not drawings; company pays corporate tax'] },
+        ],
+      },
+      { t: 'h3', text: 'Partnership profit split example' },
+      { t: 'p', html: 'Max and Penny form a partnership. Agreement: Penny gets a salary of $12,000; interest on capital 5% (Max $40k, Penny $20k); remainder shared 60:40. Profit: $50,000.' },
+      {
+        t: 'table',
+        head: ['', 'Max', 'Penny', 'Total'],
+        rows: [
+          ['Partner salary', '—', '12,000', '12,000'],
+          ['Interest on capital (5%)', '2,000', '1,000', '3,000'],
+          ['Residual 35,000 split 60:40', '21,000', '14,000', '35,000'],
+          { _cls: 'tot', cells: ['Total share', '23,000', '27,000', '50,000'] },
+        ],
+      },
+
+      { t: 'h', text: 'Company equity' },
+      { t: 'cards', cols: 3, items: [{ icon: '📜', t: 'Share capital', d: 'Nominal (par) value of shares issued. Ordinary shares carry votes; preference shares get fixed dividends first.' }, { icon: '➕', t: 'Share premium / APIC', d: 'Amount received above par value.' }, { icon: '🏦', t: 'Retained earnings', d: 'Accumulated profits not paid out as dividends.' }, { icon: '🧺', t: 'Other reserves', d: 'Revaluation surplus, FX translation reserve, legal reserves (required in some countries).' }, { icon: '↩️', t: 'Treasury shares', d: 'Own shares bought back — a deduction from equity.' }, { icon: '👥', t: 'Non-controlling interest', d: 'In group accounts, the part of subsidiaries not owned by the parent (Chapter 24).' }] },
+      { t: 'entry', title: 'Issue 10,000 shares of $1 par for $3 each', lines: [['Bank', 30000, 0], ['Share Capital', 0, 10000], ['Share Premium', 0, 20000]] },
+      { t: 'h3', text: 'Dividends' },
+      { t: 'steps', items: [{ t: 'Declaration date', d: 'The board declares a dividend → it becomes a liability. Dr Retained Earnings / Cr Dividends Payable.' }, { t: 'Record date', d: 'Who owns the shares on this date gets paid. No entry.' }, { t: 'Payment date', d: 'Dr Dividends Payable / Cr Bank.' }] },
+      { t: 'entry', title: 'Declare $0.20 per share on 100,000 shares', lines: [['Retained Earnings (or Dividends)', 20000, 0], ['Dividends Payable', 0, 20000]] },
+      { t: 'watch', html: 'Dividends are <b>not an expense</b>. They’re a distribution of profit, recorded in the statement of changes in equity. Many jurisdictions also restrict dividends to available distributable profits.' },
+      { t: 'h3', text: 'Buybacks, bonus issues and splits' },
+      { t: 'list', items: ['<b>Treasury shares</b>: buy back 1,000 shares at $5 → Dr Treasury Shares 5,000 / Cr Bank 5,000 (shown as a negative in equity).', '<b>Bonus issue / stock dividend</b>: give free shares to existing shareholders by capitalising reserves → Dr Retained Earnings (or Share Premium) / Cr Share Capital. Total equity unchanged.', '<b>Share split</b>: one $1 share becomes two $0.50 shares. No entry needed (just a memo); number of shares doubles, total equity unchanged.'] },
+      {
+        t: 'widget',
+        name: 'match',
+        opts: {
+          id: 'ch18-eq',
+          title: 'Equity events: what changes?',
+          pairs: [
+            ['Share issue for cash', 'Cash ↑ and total equity ↑'],
+            ['Cash dividend declared', 'Retained earnings ↓ and a liability ↑'],
+            ['Bonus issue', 'Retained earnings ↓, share capital ↑ — total equity unchanged'],
+            ['Share split', 'Number of shares ↑ — no journal entry'],
+            ['Share buyback', 'Cash ↓ and total equity ↓ (treasury shares)'],
+            ['Net profit for the year', 'Retained earnings ↑'],
+          ],
+        },
+      },
+      { t: 'odoo', html: 'Odoo has <b>Equity</b> and <b>Current Year Earnings</b> account types. Share issues, dividends and drawings are posted as Miscellaneous entries (or payments to/from partners). The <b>Current Year Earnings</b> line on the balance sheet is computed automatically — you don’t post profit to it yourself.' },
+      { t: 'bullets', items: ['Sole proprietors use capital and drawings; partners have capital & current accounts; companies have share capital and retained earnings.', 'Shares issued above par → share premium.', 'Dividends: declared (liability), then paid. Not an expense.', 'Bonus issues and splits don’t change total equity.', 'Treasury shares reduce equity.'] },
+    ],
+    quiz: [
+      { q: 'Issuing 1,000 shares of $1 par at $4 each credits share premium with…', o: ['$1,000', '$4,000', '$3,000', '$0'], a: 2, e: '($4 − $1) × 1,000 = $3,000.' },
+      { q: 'When is a cash dividend recorded as a liability?', o: ['Record date', 'Declaration date', 'Payment date', 'Year-end'], a: 1, e: 'The obligation arises when declared.' },
+      { q: 'A 2-for-1 share split…', o: ['Reduces equity', 'Increases equity', 'Leaves total equity unchanged', 'Creates a liability'], a: 2, e: 'Only the number and par value of shares change.' },
+      { q: 'Treasury shares are shown as…', o: ['An asset', 'A deduction from equity', 'A liability', 'Revenue'], a: 1, e: 'Buying back your own shares reduces equity.' },
+      { q: 'In a partnership, the profit-sharing arrangement is set by…', o: ['IFRS', 'The partnership agreement', 'The bank', 'Equal shares always'], a: 1, e: 'Without an agreement, local law may default to equal shares.' },
+      { q: 'Dividends are…', o: ['An expense in the P&L', 'A distribution of profit through equity', 'A liability forever', 'Revenue for the company'], a: 1, e: 'Shown in the statement of changes in equity.' },
+    ],
+    cards: [
+      ['Share capital', 'Nominal (par) value of shares issued.'],
+      ['Share premium (APIC)', 'Proceeds from shares in excess of par value.'],
+      ['Retained earnings', 'Cumulative profits not distributed.'],
+      ['Treasury shares', 'A company’s own shares bought back; deducted from equity.'],
+      ['Bonus issue', 'Free shares from capitalising reserves; total equity unchanged.'],
+      ['Dividend declaration', 'Creates a liability: Dr Retained Earnings / Cr Dividends Payable.'],
+    ],
+  });
+})();

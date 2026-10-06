@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BrainLedger — Accounting, the Brain-Friendly Way</title>
+  <meta name="description" content="An interactive, visual, brain-friendly guide to accounting — from the accounting equation to advanced IFRS and Odoo Accounting. Stories, simulators, quizzes and flashcards.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Patrick+Hand&family=Permanent+Marker&family=Archivo+Narrow:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- global hand-drawn wobble filter used by every illustration -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="sketch"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter>
+  </svg>
+
+  <header class="topbar">
+    <a class="logo" href="#/"><span class="logo-brain">🧠</span><span>Brain<b>Ledger</b></span></a>
+    <button id="burger" class="burger" type="button" aria-label="Menu">☰</button>
+    <nav id="nav" class="nav-links">
+      <a href="#/learn">📚 Learn</a>
+      <a href="#/session">⚡ Session</a>
+      <a href="#/lab">🧪 Lab</a>
+      <a href="#/cards">🃏 Cards</a>
+      <a href="#/glossary">📖 Glossary</a>
+      <a href="#/exam">🎓 Exam</a>
+      <a href="#/me" class="me-link"><span id="streak"></span><span id="xpchip" class="xpchip"></span></a>
+      <button id="theme" class="theme" type="button" aria-label="Toggle dark mode">◐</button>
+    </nav>
+  </header>
+
+  <main id="main"></main>
+
+  <footer class="foot">
+    <p><b>BrainLedger</b> — a brain-friendly guide to accounting. Your progress is saved in this browser only.</p>
+    <p class="small">Educational content. Standards (IFRS/GAAP) and tax rules vary by country and change over time — always check your local rules. Odoo is a trademark of Odoo S.A.; this site is an independent learning resource.</p>
+  </footer>
+
+  <script src="js/core.js"></script>
+  <script src="js/art.js"></script>
+  <script src="js/widgets.js"></script>
+  <script src="js/content/part1.js"></script>
+  <script src="js/content/part2.js"></script>
+  <script src="js/content/part3.js"></script>
+  <script src="js/content/part4.js"></script>
+  <script src="js/content/part5.js"></script>
+  <script src="js/content/glossary.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,495 @@
+/* PART 5 — Odoo Accounting */
+(function () {
+  const HF = window.HF;
+  HF.addPart({ id: 'p5', n: 5, title: 'Odoo Accounting', color: '#714b67', badge: 'part5', desc: 'Everything you learned, done in Odoo: setup, invoices, bills, bank, inventory, assets, analytics, multi-currency, reporting and the close.' });
+
+  const versionNote = { t: 'sticky', color: 'pink', html: '<b>Version note:</b> menus, field names and defaults shift between Odoo versions (16, 17, 18, 19…) and between Community (Invoicing) and Enterprise (full Accounting). The concepts here are stable — if a menu has moved, use the search bar in Odoo.' };
+
+  /* =============================== CH 26 =============================== */
+  HF.addChapter({
+    id: 'odoo-setup',
+    part: 'p5',
+    title: 'Odoo Accounting: The Grand Tour & Setup',
+    subtitle: 'Where debits and credits live inside an ERP',
+    art: 'erp',
+    level: 'Odoo',
+    minutes: 30,
+    quote: 'In an ERP, accounting isn’t a separate department. It’s the place every other app eventually writes to.',
+    goals: ['Understand how Odoo apps feed Accounting', 'Configure fiscal localization, chart of accounts and account types', 'Set up journals, taxes, fiscal positions and payment terms', 'Enter opening balances and set the fiscal year'],
+    blocks: [
+      { t: 'h', text: 'Why accounting in an ERP is different' },
+      { t: 'story', panels: [{ who: 'max', text: 'Penny, I’ve moved the shop to Odoo. Do I still need to write journal entries?' }, { who: 'robo', text: 'Mostly not! When you confirm an invoice, validate a delivery or register a payment, <b>I</b> write the entries.' }, { who: 'penny', text: 'Which means the <b>setup</b> decides whether those entries are right. Garbage config in, garbage books out.' }, { who: 'max', think: true, text: 'So I configure once… and the debits and credits happen by themselves. 🤯' }] },
+      { t: 'flow', items: [{ t: '🛒 Sales', c: '#fff3a8' }, { t: '📦 Inventory', c: '#bfe0f2' }, { t: '🧾 Purchase', c: '#f7c6d0' }, { t: '👥 Payroll · Expenses · POS · Subscriptions…', c: '#d9c7f0' }, { t: '📒 Accounting<br><small>journal entries</small>', c: '#b5e3c4' }] },
+      { t: 'p', html: 'Every operational app posts into Accounting through <b>journal entries</b> (model <code>account.move</code>). Invoices, bills, credit notes, payments and manual entries are all the same object with different journal types and move types.' },
+      { t: 'compare', cols: [{ t: 'Odoo Community — “Invoicing”', color: 'yellow', items: ['Customer invoices, vendor bills, payments', 'Basic reporting', 'Good for small businesses with an external accountant'] }, { t: 'Odoo Enterprise — “Accounting”', color: 'purple', items: ['Full reports (BS, P&L, cash flow, tax returns, aged lists…)', 'Bank sync & advanced reconciliation', 'Assets, deferrals, budgets, follow-ups, consolidation features, OCR bill digitisation, lock dates & close tools'] }] },
+      versionNote,
+
+      { t: 'h', text: 'Step 1: Fiscal localization' },
+      { t: 'p', html: 'When you first install Accounting, choose your company’s country. Odoo installs a <b>fiscal localization package</b>: a country-specific chart of accounts, taxes, tax report layouts, fiscal positions and sometimes e-invoicing/legal reports (e.g., India GST & e-invoice, Saudi ZATCA, Mexico CFDI, EU VAT reports).' },
+      { t: 'odoo', path: 'Accounting > Configuration > Settings > Fiscal Localization', html: 'Pick the package <b>before</b> posting any entries — changing it later is painful. Also set the <b>main currency</b>, <b>fiscal year end</b> (Fiscal Periods), and default <b>tax return periodicity</b> (monthly/quarterly) here.' },
+
+      { t: 'h', text: 'Step 2: Chart of accounts & account types' },
+      { t: 'p', html: 'Every account has a <b>type</b>. The type decides where the account lands in reports and how Odoo treats it (e.g., Receivable/Payable accounts require a partner and can be reconciled).' },
+      {
+        t: 'table',
+        head: ['Odoo account type', 'Statement', 'Examples'],
+        rows: [
+          ['Receivable', 'Balance sheet — current asset', 'Customer receivables (reconcilable, needs a partner)'],
+          ['Bank and Cash', 'Balance sheet — current asset', 'Bank, cash, outstanding receipts/payments'],
+          ['Current Assets', 'Balance sheet', 'Inventory valuation, VAT receivable, interim accounts'],
+          ['Prepayments', 'Balance sheet', 'Prepaid expenses, deferred expenses'],
+          ['Non-current Assets / Fixed Assets', 'Balance sheet', 'Vehicles, equipment, accumulated depreciation'],
+          ['Payable', 'Balance sheet — current liability', 'Supplier payables'],
+          ['Credit Card', 'Balance sheet — current liability', 'Company credit cards'],
+          ['Current Liabilities', 'Balance sheet', 'VAT payable, accrued expenses, deferred revenue'],
+          ['Non-current Liabilities', 'Balance sheet', 'Long-term loans'],
+          ['Equity', 'Balance sheet', 'Capital, retained earnings'],
+          ['Current Year Earnings', 'Balance sheet (computed)', 'Special: holds the unallocated result of the year'],
+          ['Income / Other Income', 'P&L', 'Sales, service revenue / interest income, FX gains'],
+          ['Cost of Revenue', 'P&L', 'COGS — used for gross profit'],
+          ['Expenses / Depreciation', 'P&L', 'Rent, wages / depreciation expense'],
+          ['Off-Balance Sheet', 'Neither', 'Memo tracking'],
+        ],
+      },
+      {
+        t: 'widget',
+        name: 'sort',
+        opts: {
+          id: 'ch26-types',
+          title: 'Pick the Odoo account type',
+          bins: [
+            { id: 'REC', label: 'Receivable', color: '#2e86ab' },
+            { id: 'BNK', label: 'Bank and Cash', color: '#00798c' },
+            { id: 'FIX', label: 'Fixed Assets', color: '#3a9d5d' },
+            { id: 'PAY', label: 'Payable', color: '#e4572e' },
+            { id: 'INC', label: 'Income', color: '#c08a00' },
+            { id: 'EXP', label: 'Expenses / Cost of Revenue', color: '#8e5ea2' },
+          ],
+          items: [
+            { text: '121000 Account Receivable', bin: 'REC' },
+            { text: '101401 Bank', bin: 'BNK' },
+            { text: '101403 Outstanding Receipts', bin: 'BNK', why: 'Outstanding accounts are typically Bank and Cash / current asset type so they show with cash.' },
+            { text: 'Delivery Vans', bin: 'FIX' },
+            { text: '211000 Account Payable', bin: 'PAY' },
+            { text: '400000 Product Sales', bin: 'INC' },
+            { text: '500000 Cost of Goods Sold', bin: 'EXP' },
+            { text: 'Rent', bin: 'EXP' },
+            { text: 'Petty Cash', bin: 'BNK' },
+            { text: 'Repair Service Revenue', bin: 'INC' },
+          ],
+        },
+      },
+      { t: 'watch', html: 'Account codes like 121000 or 400000 come from the generic chart; your localization will have different codes. What matters is the <b>type</b>, plus any <b>tags</b> (e.g., cash flow tags) your reports rely on.' },
+
+      { t: 'h', text: 'Step 3: Journals' },
+      {
+        t: 'table',
+        head: ['Type', 'Example code', 'Used for'],
+        rows: [
+          ['Sales', 'INV', 'Customer invoices & credit notes'],
+          ['Purchase', 'BILL', 'Vendor bills & refunds'],
+          ['Bank', 'BNK1', 'Bank statement lines & payments (one journal per bank account)'],
+          ['Cash', 'CSH1', 'Cash registers / petty cash'],
+          ['Credit Card', 'CCD1', 'Company card statements'],
+          ['Miscellaneous', 'MISC', 'Manual entries, accruals, depreciation, opening balances, tax closing, FX (Exchange Difference journal), deferrals'],
+        ],
+      },
+      { t: 'p', html: 'Journals define sequences (INV/2026/00001), default accounts and, for bank/cash journals, the bank account, suspense account and payment methods (with their <b>outstanding receipts/payments</b> accounts).' },
+
+      { t: 'h', text: 'Step 4: Taxes, fiscal positions, payment terms' },
+      { t: 'cards', cols: 3, items: [{ icon: '%', t: 'Taxes', d: 'Rate/computation, sales or purchase scope, accounts, tax grids for the return, price-included or not, cash-basis option.', color: 'purple' }, { icon: '🧭', t: 'Fiscal positions', d: 'Rules that replace taxes/accounts for certain partners: export, intra-EU B2B, inter-state GST, tax-exempt customers. Can apply automatically based on address/VAT number.', color: 'purple' }, { icon: '📅', t: 'Payment terms', d: '“Immediate”, “30 Days”, “End of following month”, multi-instalment terms, early payment discounts (e.g., 2/10 Net 30). They set due dates on invoices and bills.', color: 'purple' }] },
+      { t: 'odoo', path: 'Accounting > Configuration > Fiscal Positions', html: 'Example: create “Export” with mapping <i>Sales 15% → Sales 0% (export)</i>. Set it on a foreign customer (or let Odoo auto-detect by country). Every invoice for that customer now uses 0% tax automatically.' },
+
+      { t: 'h', text: 'Step 5: Opening balances' },
+      { t: 'steps', items: [{ t: 'Pick a cut-over date', d: 'Usually the first day of a fiscal year or month.' }, { t: 'Import open receivables & payables individually', d: 'Enter each unpaid customer invoice and vendor bill (or import them) so they can be paid and reconciled normally later.' }, { t: 'Enter other balances', d: 'Bank, inventory, fixed assets, loans, equity via a Miscellaneous opening entry (or the Opening Balance columns on the chart of accounts). AR/AP totals are already covered by step 2, so use the same control accounts carefully to avoid doubling.' }, { t: 'Check the trial balance', d: 'It must match the old system’s closing TB exactly. Differences → investigate before go-live.' }] },
+      {
+        t: 'widget',
+        name: 'match',
+        opts: {
+          id: 'ch26-terms',
+          title: 'Odoo vocabulary',
+          pairs: [
+            ['Journal Entry (account.move)', 'A balanced set of journal items; also how invoices, bills and payments are stored.'],
+            ['Journal Item', 'A single debit or credit line on an account.'],
+            ['Fiscal localization', 'Country package with chart of accounts, taxes and reports.'],
+            ['Fiscal position', 'Maps taxes/accounts to others for certain partners.'],
+            ['Payment terms', 'Rules that compute due dates (and early-payment discounts).'],
+            ['Lock date', 'Date before which entries can’t be created or modified.'],
+          ],
+        },
+      },
+      { t: 'bullets', items: ['Odoo apps post to Accounting automatically — setup determines correctness.', 'Choose the fiscal localization first; it brings CoA, taxes and reports.', 'Account types drive report placement and behaviour.', 'Journals: Sales, Purchase, Bank, Cash, Credit Card, Miscellaneous.', 'Taxes + fiscal positions + payment terms automate the details on every document.', 'Import open invoices/bills individually; check the opening TB.'] },
+    ],
+    quiz: [
+      { q: 'What should you configure FIRST in a new Odoo Accounting database?', o: ['Budgets', 'Fiscal localization', 'Analytic plans', 'Follow-up levels'], a: 1, e: 'It loads the chart of accounts and taxes everything else relies on.' },
+      { q: 'Which Odoo journal type holds depreciation and accrual entries?', o: ['Sales', 'Bank', 'Miscellaneous', 'Purchase'], a: 2, e: 'Non-routine entries live in Miscellaneous journals.' },
+      { q: 'A fiscal position is used to…', o: ['Set the fiscal year end', 'Map taxes/accounts for certain partners', 'Lock periods', 'Compute payment due dates'], a: 1, e: 'E.g., domestic tax → export 0%.' },
+      { q: 'Which account type requires a partner and supports reconciliation?', o: ['Income', 'Receivable', 'Equity', 'Depreciation'], a: 1, e: 'Receivable and Payable are partner-based reconcilable accounts.' },
+      { q: 'Why import open invoices individually instead of one lump sum?', o: ['It’s required by law everywhere', 'So future payments can be matched and aged correctly', 'To increase revenue', 'Odoo can’t import journal entries'], a: 1, e: 'Each open item needs its own partner and due date.' },
+      { q: 'In Odoo, a posted invoice is technically a…', o: ['Sales order', 'Journal entry (account.move)', 'Product', 'Report'], a: 1, e: 'Invoices, bills and payments are all journal entries.' },
+    ],
+    cards: [
+      ['account.move', 'Odoo model for journal entries — including invoices, bills and payment entries.'],
+      ['Fiscal localization package', 'Country-specific chart of accounts, taxes, reports.'],
+      ['Account type (Odoo)', 'Decides report placement and behaviour (e.g., Receivable, Bank and Cash, Income).'],
+      ['Fiscal position', 'Automatic tax/account mapping for specific partners.'],
+      ['Payment terms', 'Due-date rules, incl. instalments and early-payment discounts.'],
+      ['Opening balance strategy', 'Open AR/AP as individual documents; other balances via an opening entry.'],
+    ],
+  });
+
+  /* =============================== CH 27 =============================== */
+  HF.addChapter({
+    id: 'odoo-sales',
+    part: 'p5',
+    title: 'Odoo: From Quotation to Cash',
+    subtitle: 'Customer invoices, credit notes, payments and follow-ups',
+    art: 'invoice',
+    level: 'Odoo',
+    minutes: 30,
+    quote: 'Draft invoices don’t touch the books. Posted ones do. Paid ones make you smile.',
+    goals: ['Follow the order-to-cash flow and its accounting entries', 'Use invoicing policies (ordered vs delivered)', 'Register payments and understand payment states', 'Issue credit notes and run follow-ups'],
+    blocks: [
+      { t: 'h', text: 'The order-to-cash flow' },
+      { t: 'flow', items: [{ t: 'Quotation', c: '#fff3a8' }, { t: 'Sales Order', c: '#fff3a8' }, { t: 'Delivery', c: '#bfe0f2' }, { t: 'Invoice (posted)', c: '#b5e3c4' }, { t: 'Payment', c: '#d9c7f0' }, { t: 'Bank reconciliation', c: '#f7c6d0' }] },
+      { t: 'p', html: 'Quotations and sales orders are <b>commitments</b>, not accounting events — no journal entries yet. The books move when the invoice is <b>posted</b> (and, with automated inventory valuation, when goods are delivered).' },
+      { t: 'compare', cols: [{ t: 'Invoicing policy: Ordered quantities', color: 'yellow', items: ['Invoice as soon as the order is confirmed', 'Typical for services, subscriptions, prepayment businesses'] }, { t: 'Invoicing policy: Delivered quantities', color: 'blue', items: ['Invoice only what has been delivered', 'Prevents billing for goods not yet shipped — good revenue cut-off'] }] },
+
+      { t: 'h', text: 'Try it: invoice to cash' },
+      { t: 'widget', name: 'odoo' },
+      { t: 'p', html: 'Look at the entries the simulator wrote:' },
+      { t: 'list', items: ['<b>Posting the invoice</b>: Dr Receivable / Cr Income / Cr Tax payable. Revenue is recognised; tax is a liability.', '<b>Registering the payment</b>: Dr Outstanding Receipts / Cr Receivable. The invoice is now “In Payment”: the customer says they paid, but the bank hasn’t confirmed.', '<b>Reconciling the bank line</b>: Dr Bank / Cr Outstanding Receipts. Now it’s really “Paid”.'] },
+      { t: 'watch', html: 'Depending on version and settings, Odoo may skip the outstanding account step: if no outstanding receipts account is configured on the payment method, the payment can be matched directly with the bank statement line, and the bank line clears the receivable itself. Either way, the end result is the same: Dr Bank / Cr Receivable.' },
+      { t: 'table', head: ['Status field', 'Values', 'Meaning'], rows: [['Invoice state', 'Draft → Posted (→ Cancelled)', 'Only Posted affects the ledger'], ['Payment status', 'Not Paid → Partially Paid → In Payment → Paid (also Reversed)', 'In Payment = matched to a payment not yet reconciled with the bank']] },
+
+      { t: 'h', text: 'Credit notes, discounts & write-offs' },
+      { t: 'cards', cols: 2, items: [{ icon: '↩️', t: 'Credit note', d: 'From a posted invoice: <b>Credit Note</b> (reverse). Choose partial refund, full refund, or full refund + new draft invoice (to correct). The credit note posts Dr Income / Dr Tax / Cr Receivable and can be reconciled with the invoice.', color: 'purple' }, { icon: '💸', t: 'Early payment discount', d: 'Payment terms like “2/10 Net 30” show the discounted amount; if paid in time, Odoo books the discount (and tax adjustment per settings) automatically.', color: 'purple' }, { icon: '✂️', t: 'Payment difference', d: 'Customer paid $995 on a $1,000 invoice? Register payment → “Mark as fully paid” and post the $5 to a write-off account (e.g., bank charges).', color: 'purple' }, { icon: '⬇️', t: 'Down payments', d: 'Invoice a deposit from the sales order; it’s deducted on the final invoice. Accounted on a down-payment/customer advances account as configured.', color: 'purple' }] },
+      { t: 'h', text: 'Getting paid faster' },
+      { t: 'list', items: ['<b>Customer portal & online payment</b>: send invoices by email with a “Pay Now” link (card, bank transfer, payment providers).', '<b>QR codes / structured references</b> on invoices (SEPA QR, Swiss QR, UPI in India, etc.) speed up bank matching.', '<b>Follow-up reports</b> (Accounting > Customers > Follow-up Reports): define levels (e.g., 15 days: friendly email; 30 days: letter + call activity; 60 days: stop deliveries) and send in batch.', '<b>Aged Receivable</b> report: who owes what, by age bucket.'] },
+      { t: 'say', who: 'robo', html: 'Pro tip: put the invoice reference in the bank transfer communication. When the bank line arrives, I can match it to the right invoice <b>automatically</b>. 🤖' },
+      {
+        t: 'pencil',
+        html: 'What journal entry (if any) does Odoo post when you…',
+        items: [
+          { q: 'Confirm a sales order for $5,000?', a: 'None. A sales order is a commitment, not an accounting event.' },
+          { q: 'Post a $5,000 invoice with 10% tax?', a: 'Dr Receivable 5,500 / Cr Product Sales 5,000 / Cr Tax Payable 500.' },
+          { q: 'Issue a full credit note for that invoice?', a: 'The mirror image: Dr Product Sales 5,000 / Dr Tax Payable 500 / Cr Receivable 5,500, reconciled with the invoice.' },
+        ],
+      },
+      { t: 'bullets', items: ['Quotations & sales orders don’t touch the ledger; posted invoices do.', 'Invoice: Dr Receivable / Cr Income / Cr Tax.', 'Payment: Dr Outstanding Receipts (or Bank) / Cr Receivable.', 'Bank reconciliation confirms cash: status becomes Paid.', 'Credit notes reverse invoices; payment differences can be written off.', 'Follow-ups, online payment and references speed up collection.'] },
+    ],
+    quiz: [
+      { q: 'Confirming a sales order in Odoo creates…', o: ['A journal entry for revenue', 'No journal entry', 'A payment', 'A credit note'], a: 1, e: 'Orders are commitments; the invoice creates the entry.' },
+      { q: 'An invoice shows “In Payment”. This means…', o: ['It is still a draft', 'A payment is registered but not yet reconciled with the bank', 'The customer refused to pay', 'It was cancelled'], a: 1, e: 'Waiting for bank confirmation.' },
+      { q: 'Registering a customer payment (with outstanding accounts) posts…', o: ['Dr Bank / Cr Income', 'Dr Outstanding Receipts / Cr Receivable', 'Dr Receivable / Cr Bank', 'Dr Income / Cr Receivable'], a: 1, e: 'Then the bank line clears Outstanding Receipts.' },
+      { q: 'Invoicing policy “Delivered quantities” helps with…', o: ['Tax rates', 'Revenue cut-off', 'Payroll', 'Depreciation'], a: 1, e: 'You only invoice what was delivered.' },
+      { q: 'A customer pays $1,000 on a $1,010 invoice; the $10 is a bank fee you accept. In Odoo you…', o: ['Leave the invoice partially paid forever', 'Mark as fully paid and post the difference to a write-off account', 'Delete the invoice', 'Create a new invoice'], a: 1, e: 'Use the payment difference / write-off option.' },
+    ],
+    cards: [
+      ['Order-to-cash (Odoo)', 'Quotation → Sales Order → Delivery → Invoice → Payment → Bank reconciliation.'],
+      ['Posted invoice entry', 'Dr Receivable / Cr Income / Cr Tax payable.'],
+      ['In Payment', 'Invoice matched to a payment not yet reconciled to a bank line.'],
+      ['Credit note', 'Reversal of an invoice, partial or full; reconciled against it.'],
+      ['Follow-up report', 'Automated overdue reminders by level.'],
+    ],
+  });
+
+  /* =============================== CH 28 =============================== */
+  HF.addChapter({
+    id: 'odoo-purchases',
+    part: 'p5',
+    title: 'Odoo: Vendor Bills & Payables',
+    subtitle: 'Procure-to-pay without paying for things you never got',
+    art: 'boxes',
+    level: 'Odoo',
+    minutes: 25,
+    quote: 'Pay only what you ordered, received, and were correctly billed for. That’s three-way matching.',
+    goals: ['Follow the procure-to-pay flow', 'Use bill control and three-way matching', 'Record bills with OCR, register and batch payments', 'Handle refunds and vendor credit'],
+    blocks: [
+      { t: 'h', text: 'Procure-to-pay' },
+      { t: 'flow', items: [{ t: 'RFQ', c: '#fff3a8' }, { t: 'Purchase Order', c: '#fff3a8' }, { t: 'Receipt', c: '#bfe0f2' }, { t: 'Vendor Bill', c: '#f7c6d0' }, { t: 'Payment', c: '#d9c7f0' }, { t: 'Bank reconciliation', c: '#b5e3c4' }] },
+      { t: 'widget', name: 'odoo', opts: { mode: 'purchase' } },
+      { t: 'p', html: 'Mirror image of sales: Bill → Dr Expense (or stock interim) / Dr Tax Paid / Cr Payable. Payment → Dr Payable / Cr Outstanding Payments. Bank line → Dr Outstanding Payments / Cr Bank.' },
+
+      { t: 'h', text: 'Bill control & three-way matching' },
+      { t: 'compare', cols: [{ t: 'Control policy: Ordered quantities', color: 'yellow', items: ['You can bill what was ordered on the PO', 'Fine for services and trusted suppliers'] }, { t: 'Control policy: Received quantities', color: 'blue', items: ['You can only bill what was received', 'Protects against paying for undelivered goods'] }] },
+      { t: 'p', html: 'Enable <b>3-way matching</b> (Purchase settings) and Odoo compares <b>PO ↔ receipt ↔ bill</b>. The bill’s “Should Be Paid” status shows <i>Yes</i> only when everything matches; otherwise it’s flagged for review.' },
+      { t: 'say', who: 'audrey', html: 'Three-way matching is one of the most effective fraud and error controls in purchasing. No PO, no receipt, no pay.' },
+
+      { t: 'h', text: 'Getting bills in' },
+      { t: 'cards', cols: 3, items: [{ icon: '📧', t: 'Email alias', d: 'Forward supplier PDFs to the purchase journal’s email alias; Odoo creates draft bills.', color: 'purple' }, { icon: '🤖', t: 'OCR digitisation', d: 'Odoo’s AI extracts vendor, date, amounts and taxes from the PDF (Enterprise; uses credits).', color: 'purple' }, { icon: '🔗', t: 'From PO', d: 'Create bill from the purchase order — lines and prices copied, linked for matching.', color: 'purple' }] },
+      { t: 'p', html: 'Before posting, check: vendor, bill reference (Odoo warns on duplicates), bill date vs accounting date, tax, account / product category, analytic distribution, and payment terms.' },
+
+      { t: 'h', text: 'Paying suppliers' },
+      { t: 'list', items: ['<b>Register Payment</b> on a bill (or select many bills → one payment per vendor or grouped).', '<b>Batch payments</b>: group payments for a single bank upload — SEPA credit transfer XML, NACHA (US), or printed cheques depending on localization.', '<b>Partial payments</b> leave the bill “Partially Paid” with the remaining amount due.', '<b>Vendor refunds</b> (credit notes) reduce what you owe and can be reconciled with open bills.'] },
+      { t: 'h3', text: 'Purchase-side gotchas' },
+      { t: 'watch', html: '<b>Bill date vs accounting date:</b> a December bill entered in January must keep its December accounting date (unless the period is locked) — otherwise December expenses are understated. Use accruals for goods received but not billed at month-end.' },
+      { t: 'pencil', items: [{ q: 'At month-end you have goods received (receipts validated) but no vendor bills yet. What should happen in the books?', a: 'Accrue them. With automated inventory valuation, the receipt already posted Dr Stock / Cr Stock Interim (Received), so the interim account shows the unbilled liability. For services/expenses, post an accrual (Dr Expense / Cr Accrued Liabilities) or use Odoo’s “accrued expense entry” action from purchase orders to be billed, if available in your version.' }] },
+      { t: 'bullets', items: ['Procure-to-pay: RFQ → PO → Receipt → Bill → Payment → Bank.', 'Bill: Dr Expense/Stock interim + Dr Tax / Cr Payable.', 'Bill control on received quantities + 3-way matching prevent overpayment.', 'Email alias & OCR speed up bill entry; Odoo flags duplicate references.', 'Batch payments produce bank files; partial payments and refunds are reconciled.'] },
+    ],
+    quiz: [
+      { q: 'Three-way matching compares…', o: ['Quote, invoice, payment', 'Purchase order, receipt, vendor bill', 'Bank, book, ledger', 'Budget, actual, forecast'], a: 1, e: 'PO ↔ receipt ↔ bill.' },
+      { q: 'Posting a vendor bill for an expense service posts…', o: ['Dr Payable / Cr Expense', 'Dr Expense + Dr Tax Paid / Cr Payable', 'Dr Bank / Cr Payable', 'Dr Income / Cr Payable'], a: 1, e: 'Expense and recoverable tax; liability to the vendor.' },
+      { q: 'Bill control set to “Received quantities” means…', o: ['You can bill before receiving', 'You can only bill what has been received', 'Bills are automatically paid', 'No bills are needed'], a: 1, e: 'Protects against billing for goods not received.' },
+      { q: 'Batch payments are mainly used to…', o: ['Group many vendor payments into one bank file/upload', 'Merge vendors', 'Create invoices', 'Calculate depreciation'], a: 0, e: 'E.g., SEPA XML or NACHA files.' },
+      { q: 'A December bill keyed in on 5 January should normally be dated…', o: ['5 January', 'December (bill/accounting date)', 'Any date', 'The payment date'], a: 1, e: 'Correct period cut-off.' },
+    ],
+    cards: [
+      ['Procure-to-pay', 'RFQ → PO → Receipt → Vendor bill → Payment → Bank reconciliation.'],
+      ['3-way matching', 'Matching PO, receipt and bill before paying.'],
+      ['Bill control policy', 'Ordered vs received quantities determine what can be billed.'],
+      ['Batch payment', 'Grouping several payments into one bank transfer/file.'],
+      ['Vendor bill entry', 'Dr Expense (or stock interim) + Dr Tax / Cr Payable.'],
+    ],
+  });
+
+  /* =============================== CH 29 =============================== */
+  HF.addChapter({
+    id: 'odoo-bank',
+    part: 'p5',
+    title: 'Odoo: Bank, Cash & Reconciliation',
+    subtitle: 'Where every transaction finally meets reality',
+    art: 'bank',
+    level: 'Odoo',
+    minutes: 25,
+    quote: 'The bank statement is the only document in accounting written by someone who doesn’t care about your profit.',
+    goals: ['Get bank statements into Odoo (sync or import)', 'Reconcile statement lines: match, create counterpart, write-off', 'Automate with reconciliation models', 'Handle internal transfers and cash journals'],
+    blocks: [
+      { t: 'h', text: 'Getting bank data in' },
+      { t: 'cards', cols: 3, items: [{ icon: '🔄', t: 'Bank synchronisation', d: 'Connect the bank via an online provider (availability depends on country/bank). Lines arrive automatically, usually daily.', color: 'purple' }, { icon: '📄', t: 'File import', d: 'CSV, XLSX, OFX, QIF, CAMT.053, CODA (format support depends on installed modules).', color: 'purple' }, { icon: '✍️', t: 'Manual entry', d: 'Type in statement lines (fine for low volume or cash journals).', color: 'purple' }] },
+      { t: 'p', html: 'Each <b>bank statement line</b> creates an entry: Dr/Cr Bank against the journal’s <b>suspense account</b>. Reconciliation replaces that suspense line with the real counterpart.' },
+      { t: 'art', name: 'reconcile', caption: 'Left: bank lines. Right: open items in Odoo. Your job: draw the lines between them.' },
+
+      { t: 'h', text: 'The reconciliation widget' },
+      { t: 'p', html: 'Open it from the Accounting dashboard (bank journal card → <b>Reconcile</b>). For each line, you can:' },
+      { t: 'steps', items: [{ t: 'Match existing entries', d: 'Customer invoice, vendor bill, a registered payment (outstanding receipt/payment), or any open receivable/payable item. Odoo suggests matches by amount, partner and reference.' }, { t: 'Create a counterpart (manual operation)', d: 'For items with no document: bank fees, interest, loan repayments, tax payments, owner capital. Choose the account, label and tax.' }, { t: 'Partial / multiple matches', d: 'One bank line paying several invoices, or several lines paying one invoice. Leftovers can stay open or be written off.' }, { t: 'Validate', d: 'The suspense line is replaced; the invoice/bill becomes Paid.' }] },
+      { t: 'widget', name: 'bankrec', opts: {
+        mode: 'odoo',
+        bank: [
+          { id: 'q1', d: '10/02', desc: 'AZURE INTERIOR INV/2026/00012', amt: 3450, m: 'a' },
+          { id: 'q2', d: '10/03', desc: 'GEAR SUPPLY CO', amt: -1380, m: 'b' },
+          { id: 'q3', d: '10/05', desc: 'DECO ADDICT INV/2026/00015', amt: 920, m: 'c' },
+          { id: 'q4', d: '10/31', desc: 'Monthly account fee', amt: -25 },
+          { id: 'q5', d: '10/31', desc: 'Loan repayment', amt: -1500 },
+        ],
+        book: [
+          { id: 'o1', d: '09/20', desc: 'INV/2026/00012 Azure Interior', amt: 3450, m: 'a' },
+          { id: 'o2', d: '09/25', desc: 'BILL/2026/09/0007 Gear Supply', amt: -1380, m: 'b' },
+          { id: 'o3', d: '09/28', desc: 'INV/2026/00015 Deco Addict', amt: 920, m: 'c' },
+          { id: 'o4', d: '10/30', desc: 'INV/2026/00019 Ready Mat (not yet paid)', amt: 760 },
+        ],
+      } },
+      { t: 'p', html: 'Here the “book” side is the list of open documents. The leftover bank lines (fee, loan) need <b>counterpart entries</b> — exactly what a reconciliation model can automate. The unpaid Ready Mat invoice simply stays open: not every open item has to match this month!' },
+
+      { t: 'h', text: 'Reconciliation models: teach the robot' },
+      { t: 'table', head: ['Model type', 'What it does', 'Example'], rows: [['Button to generate counterpart entry', 'A one-click button in the widget that fills accounts/amounts', '“Bank fees” → 100% to Bank Charges'], ['Rule to suggest counterpart entry', 'When a line matches conditions (label contains, amount range), propose a counterpart — optionally auto-validate', 'Label contains “Monthly account fee” → Bank Charges, auto-validate'], ['Rule to match invoices/bills', 'Match lines to open documents using references, partner, amount tolerance', 'Payment tolerance 1% → write off small differences to Discounts']] },
+      { t: 'say', who: 'robo', html: 'With good models and references on invoices, I can auto-reconcile most of your bank lines. You just review the leftovers. ☕' },
+
+      { t: 'h', text: 'Internal transfers & cash' },
+      { t: 'list', items: ['<b>Internal transfer</b> (e.g., bank → petty cash): use an internal transfer payment or a liquidity transfer account so both journals’ statement lines reconcile against the same transfer.', '<b>Cash journals</b> work like bank journals: enter cash statement lines (receipts and spend) and reconcile them; count cash and post differences (cash over/short).', '<b>Credit card journals</b>: import card statements; the card settlement from the bank is a transfer between the bank and the card liability.'] },
+      { t: 'watch', html: 'Never “fix” a bank difference by posting directly to the Bank account in a manual entry. Every movement on Bank should come from a statement line, otherwise the bank reconciliation report will never match the real bank balance.' },
+      { t: 'odoo', path: 'Accounting > Reporting > Bank Reconciliation (from the bank journal)', html: 'The bank reconciliation report shows the last statement balance, unreconciled statement lines and outstanding payments/receipts — your modern “bank reconciliation statement”. At month-end, unreconciled items should be explainable timing differences only.' },
+      { t: 'bullets', items: ['Bank lines arrive via sync, import or manual entry and sit in a suspense account.', 'Reconcile by matching documents/payments or creating counterparts.', 'Reconciliation models automate fees, recurring items and invoice matching.', 'Internal transfers use transfer accounts so both sides reconcile.', 'Only statement lines should move the Bank account.'] },
+    ],
+    quiz: [
+      { q: 'Before reconciliation, a bank statement line in Odoo is booked against…', o: ['Income', 'The journal’s suspense account', 'Receivable', 'Equity'], a: 1, e: 'Reconciliation replaces the suspense line with the real counterpart.' },
+      { q: 'A monthly bank fee with no document should be reconciled by…', o: ['Ignoring it', 'Creating a counterpart to Bank Charges (or a reconciliation model)', 'Creating a customer invoice', 'Deleting the line'], a: 1, e: 'Manual operation or model.' },
+      { q: 'Which reconciliation model type can auto-match bank lines to open invoices?', o: ['Button to generate counterpart entry', 'Rule to match invoices/bills', 'Fiscal position', 'Payment terms'], a: 1, e: 'It matches by reference, partner and amount tolerances.' },
+      { q: 'Why avoid manual entries directly to the Bank account?', o: ['They’re illegal', 'They break the link between ledger and statement lines', 'Odoo charges for them', 'They change taxes'], a: 1, e: 'The bank balance in Odoo should equal statements.' },
+      { q: 'Moving money from the bank to petty cash is best recorded as…', o: ['An expense', 'An internal transfer', 'Revenue', 'A vendor bill'], a: 1, e: 'It’s a transfer between two of your own liquidity accounts.' },
+    ],
+    cards: [
+      ['Bank statement line', 'Imported bank transaction; initially booked against a suspense account.'],
+      ['Reconciliation widget', 'Odoo screen to match bank lines with documents or create counterparts.'],
+      ['Reconciliation model', 'Rules/buttons automating counterparts and matching.'],
+      ['Suspense account (bank)', 'Temporary account holding unreconciled bank lines.'],
+      ['Internal transfer', 'Movement of funds between two company liquidity accounts.'],
+    ],
+  });
+
+  /* =============================== CH 30 =============================== */
+  HF.addChapter({
+    id: 'odoo-inventory-assets',
+    part: 'p5',
+    title: 'Odoo: Inventory Valuation, Assets & Deferrals',
+    subtitle: 'The entries that happen while you’re not looking',
+    art: 'gears',
+    level: 'Odoo',
+    minutes: 30,
+    quote: 'Every stock move has a price tag. Every asset has a timetable. Odoo keeps both.',
+    goals: ['Configure costing method and automated valuation', 'Trace the stock journal entries (receipt, delivery, COGS)', 'Set up asset models and depreciation boards', 'Automate deferred revenue and expenses'],
+    blocks: [
+      { t: 'h', text: 'Inventory valuation settings' },
+      { t: 'p', html: 'Set on the <b>product category</b> (Inventory > Configuration > Product Categories):' },
+      { t: 'cards', cols: 2, items: [{ icon: '🏷️', t: 'Costing method', d: '<b>Standard Price</b> (fixed cost you set), <b>Average Cost (AVCO)</b> (recalculated on each receipt), or <b>FIFO</b> (layers consumed oldest first).', color: 'purple' }, { icon: '⚙️', t: 'Inventory valuation', d: '<b>Manual (periodic)</b>: no automatic stock entries; post adjustments yourself. <b>Automated (perpetual)</b>: every stock move posts journal entries.', color: 'purple' }] },
+      { t: 'p', html: 'With automated valuation, the category also defines: <b>Stock Valuation account</b> (the inventory asset), <b>Stock Input / Stock Output</b> (interim) accounts, and the <b>stock journal</b>.' },
+      { t: 'h3', text: 'The entries (Anglo-Saxon style, common default)' },
+      { t: 'entry', title: '1. Receive 10 bikes @ $400 (receipt validated)', lines: [['Stock Valuation', 4000, 0], ['Stock Interim (Received)', 0, 4000]] },
+      { t: 'entry', title: '2. Vendor bill posted', lines: [['Stock Interim (Received)', 4000, 0], ['Tax Paid', 600, 0], ['Account Payable', 0, 4600]] },
+      { t: 'entry', title: '3. Deliver 2 bikes to a customer', lines: [['Stock Interim (Delivered)', 800, 0], ['Stock Valuation', 0, 800]] },
+      { t: 'entry', title: '4. Customer invoice posted (2 × $650)', lines: [['Account Receivable', 1495, 0], ['Product Sales', 0, 1300], ['Tax Received', 0, 195]] },
+      { t: 'entry', title: '   …and COGS recognised with the invoice', lines: [['Cost of Goods Sold', 800, 0], ['Stock Interim (Delivered)', 0, 800]] },
+      { t: 'sticky', html: 'Interim accounts are <b>waiting rooms</b>. Received-not-billed sits in Stock Interim (Received) — a de facto accrual! Delivered-not-invoiced sits in Stock Interim (Delivered). Both should be reviewed at month-end.' },
+      { t: 'watch', html: 'In <b>continental</b> localizations (and in recent Odoo versions’ reworked stock accounting), entries can differ — e.g., purchases expensed on the bill and stock variation posted at period end, or COGS posted at delivery. Always check your localization and version, and test a full cycle in a staging database.' },
+      { t: 'p', html: 'If a vendor bill price differs from the receipt valuation, Odoo posts the difference to a <b>price difference</b> account (Standard cost) or adjusts the valuation (AVCO/FIFO, if stock is still on hand). <b>Landed costs</b> (freight, duties) can be added to receipts to increase the inventory value.' },
+
+      { t: 'h', text: 'Fixed assets' },
+      { t: 'steps', items: [{ t: 'Create an asset model', d: 'e.g., “Vehicles – 5 years linear, monthly, prorata”, with fixed asset, depreciation and expense accounts and a journal.' }, { t: 'Link it to an account', d: 'On the chart of accounts, set the account to <b>create assets</b> (no / draft / validate) using that model.' }, { t: 'Post the vendor bill', d: 'Bill line on the Vehicles account → Odoo creates the asset with the computed depreciation board.' }, { t: 'Let it run', d: 'Depreciation entries post automatically on their dates (Dr Depreciation Expense / Cr Accumulated Depreciation).' }, { t: 'Modify, sell or dispose', d: 'Re-evaluate (impair/increase), pause, or <b>Sell/Dispose</b>: Odoo posts the final depreciation and the gain/loss entry.' }] },
+      { t: 'widget', name: 'depreciation', opts: { cost: 36000, salvage: 6000, life: 5 } },
+      { t: 'p', html: 'Methods in Odoo: <b>Straight Line</b>, <b>Declining</b>, and <b>Declining then Straight Line</b> (switches when straight-line gives more). Periods by months or years; prorata from acquisition date or start of period.' },
+
+      { t: 'h', text: 'Deferred revenue & expenses' },
+      { t: 'p', html: 'Remember prepaid insurance and annual subscriptions (Chapter 8)? Odoo 17+ automates them:' },
+      { t: 'list', items: ['In Accounting settings, set the <b>deferred expense</b> and <b>deferred revenue</b> accounts, the journal, and whether to generate entries <b>on invoice validation</b> or <b>manually & grouped</b> at month-end.', 'On a bill/invoice line, fill <b>Start Date</b> and <b>End Date</b>.', 'Odoo moves the amount to the deferred account and releases it to expense/revenue month by month (computation by days, months or full months).'] },
+      { t: 'entry', title: 'Annual software subscription $1,200, 1 Oct–30 Sep, on bill validation', lines: [['Deferred Expenses (Prepayments)', 1200, 0], ['Software Expense', 0, 1200]], narr: 'Bill line expense moved to deferred' },
+      { t: 'entry', title: 'Each month-end (automated)', lines: [['Software Expense', 100, 0], ['Deferred Expenses (Prepayments)', 0, 100]] },
+      { t: 'odoo', path: 'Accounting > Reporting > Deferred Expense / Deferred Revenue', html: 'These reports show what’s been deferred, released and what remains — perfect for reconciling the prepayments and deferred revenue accounts at month-end.' },
+      { t: 'bullets', items: ['Product category sets costing method (Standard/AVCO/FIFO) and valuation (manual/automated).', 'Automated valuation posts stock entries via valuation and interim accounts.', 'Interim accounts reveal received-not-billed and delivered-not-invoiced.', 'Asset models + account settings auto-create assets from bills.', 'Deferred entries use start/end dates on lines.'] },
+    ],
+    quiz: [
+      { q: 'Where do you set the costing method in Odoo?', o: ['On the customer', 'On the product category', 'On the journal', 'On the tax'], a: 1, e: 'Product categories hold costing and valuation settings.' },
+      { q: 'With automated valuation, validating a receipt posts…', o: ['Dr COGS / Cr Stock', 'Dr Stock Valuation / Cr Stock Interim (Received)', 'Dr Payable / Cr Bank', 'Nothing'], a: 1, e: 'Inventory increases against the interim account.' },
+      { q: 'A balance on Stock Interim (Received) at month-end usually means…', o: ['Goods received but not yet billed', 'Customer payments pending', 'Depreciation missing', 'Tax due'], a: 0, e: 'It acts like an accrual.' },
+      { q: 'Which is NOT an Odoo depreciation method?', o: ['Straight Line', 'Declining', 'Declining then Straight Line', 'Sum-of-the-years’ digits'], a: 3, e: 'SYD isn’t a standard Odoo option.' },
+      { q: 'To automate a 12-month prepaid expense in Odoo 17+, you…', o: ['Create an asset', 'Set start and end dates on the bill line', 'Use a fiscal position', 'Change payment terms'], a: 1, e: 'Deferred expense entries are generated from the dates.' },
+    ],
+    cards: [
+      ['Costing method (Odoo)', 'Standard Price, Average Cost (AVCO) or FIFO.'],
+      ['Automated valuation', 'Perpetual inventory: stock moves post journal entries.'],
+      ['Stock interim accounts', 'Temporary accounts between stock moves and invoices/bills.'],
+      ['Asset model', 'Template defining depreciation method, duration and accounts.'],
+      ['Deferred entries (Odoo)', 'Automatic spreading of revenue/expense using start and end dates.'],
+    ],
+  });
+
+  /* =============================== CH 31 =============================== */
+  HF.addChapter({
+    id: 'odoo-analytic-multi',
+    part: 'p5',
+    title: 'Odoo: Analytics, Budgets, Multi-Currency & Multi-Company',
+    subtitle: 'Slicing the numbers and crossing borders',
+    art: 'globe',
+    level: 'Odoo',
+    minutes: 25,
+    quote: 'The general ledger tells you <i>what</i>. Analytic accounting tells you <i>where</i> and <i>for whom</i>.',
+    goals: ['Use analytic plans and distributions', 'Compare budgets to actuals', 'Configure multi-currency and understand exchange differences', 'Run multiple companies and inter-company transactions'],
+    blocks: [
+      { t: 'h', text: 'Analytic accounting' },
+      { t: 'p', html: 'Max wants profit <b>per store</b> and <b>per product line</b>. Creating a separate revenue account for every combination would explode the chart of accounts. Instead, tag each journal item with <b>analytic accounts</b>.' },
+      { t: 'list', items: ['<b>Analytic plans</b> are dimensions: e.g., “Stores” (Downtown, Uptown), “Product lines” (Bikes, Repairs, Accessories), “Projects”.', '<b>Analytic distribution</b> on a line can split by %: rent 60% Downtown / 40% Uptown.', '<b>Distribution models</b> apply defaults automatically by account, product, partner or company.', 'Plans can be optional, mandatory or unavailable per account type — e.g., mandatory on expenses so nobody forgets.'] },
+      { t: 'table', caption: 'Analytic report: profit by store', head: ['', 'Downtown', 'Uptown', 'Total'], rows: [['Revenue', '150,000', '95,000', '245,000'], ['COGS', '(90,000)', '(57,000)', '(147,000)'], ['Rent (60/40)', '(10,800)', '(7,200)', '(18,000)'], ['Wages', '(14,000)', '(12,000)', '(26,000)'], { _cls: 'tot', cells: ['Store contribution', '35,200', '18,800', '54,000'] }] },
+      { t: 'brain', html: 'Uptown makes less. Should Max close it? What extra information would you want (think: fixed head-office costs that won’t go away, growth trend, the lease length)? Revisit relevant costing in Chapter 21!' },
+
+      { t: 'h', text: 'Budgets' },
+      { t: 'p', html: 'Define budget lines per analytic account (and/or account) and period. Odoo compares <b>planned</b> vs <b>actual</b> (and “theoretical” amount to date in some versions), showing achievement %. Pair it with the variance analysis you learned in Chapter 22.' },
+
+      { t: 'h', text: 'Multi-currency' },
+      { t: 'steps', items: [{ t: 'Activate currencies', d: 'Accounting > Configuration > Currencies. Enable automatic rate updates (provider + frequency) in settings.' }, { t: 'Invoice in foreign currency', d: 'Choose the currency on the invoice/bill; Odoo stores both the foreign amount and the company-currency amount at the invoice-date rate.' }, { t: 'Get paid', d: 'Payment converts at the payment-date rate. Odoo automatically posts the <b>realised exchange difference</b> to the Exchange Difference journal (gain or loss account from settings).' }, { t: 'Month-end', d: 'Use the <b>Unrealized Currency Gains/Losses</b> report to post an adjustment for open foreign items (typically auto-reversed next period).' }] },
+      { t: 'widget', name: 'fx' },
+      { t: 'p', html: 'Foreign-currency <b>bank journals</b> keep statement balances in that currency; reconcile normally — differences become exchange gains/losses.' },
+
+      { t: 'h', text: 'Multi-company' },
+      { t: 'list', items: ['Several legal entities in one database; switch companies in the top bar (or view several at once).', 'Each company has its own chart of accounts, journals, taxes, fiscal year and currency.', '<b>Inter-company rules</b>: a sales order/invoice in Company A can auto-create the matching purchase order/bill in Company B.', 'Branches (in recent versions) let one legal entity have sub-units sharing the parent’s books and tax reporting.', 'Group reporting: run reports across selected companies; eliminate intercompany balances (Chapter 24) — with consolidation tooling depending on version.'] },
+      { t: 'watch', html: 'Inter-company balances must <b>agree</b> on both sides (A’s receivable from B = B’s payable to A). Reconcile them every month before consolidation, or eliminations won’t balance.' },
+      { t: 'bullets', items: ['Analytic plans add dimensions (stores, projects, product lines) without bloating the CoA.', 'Distributions can split lines by %; models apply them automatically.', 'Budgets compare planned vs actual per analytic account.', 'Multi-currency: realised differences posted automatically; unrealised via report adjustment.', 'Multi-company: separate books, inter-company rules, reconcile intercompany balances.'] },
+    ],
+    quiz: [
+      { q: 'Analytic accounting in Odoo is mainly used to…', o: ['File tax returns', 'Track profitability by dimensions such as store or project', 'Reconcile bank lines', 'Compute payroll'], a: 1, e: 'It tags journal items with cost/profit dimensions.' },
+      { q: 'Rent split 60/40 between two stores uses…', o: ['Two invoices', 'An analytic distribution', 'A fiscal position', 'A credit note'], a: 1, e: 'Distributions split lines by percentage.' },
+      { q: 'Realised exchange differences on payment are posted…', o: ['Manually only', 'Automatically to the Exchange Difference journal', 'Never', 'To the sales journal'], a: 1, e: 'Odoo creates them at reconciliation.' },
+      { q: 'Inter-company rules can…', o: ['Create a matching bill in the other company from an invoice', 'Merge two companies’ charts', 'Change tax rates', 'Delete journals'], a: 0, e: 'Mirror documents between companies.' },
+      { q: 'Unrealised FX gains/losses at month-end are usually…', o: ['Ignored', 'Booked via an adjustment that’s reversed next period', 'Recorded as revenue', 'Posted to equity'], a: 1, e: 'Odoo’s report creates the adjustment entry.' },
+    ],
+    cards: [
+      ['Analytic plan', 'A reporting dimension (e.g., stores, projects).'],
+      ['Analytic distribution', 'Allocation of a journal item across analytic accounts by %.'],
+      ['Exchange Difference journal', 'Journal for automatically posted realised FX gains/losses.'],
+      ['Unrealized currency gains/losses', 'Revaluation of open foreign-currency items at period end.'],
+      ['Inter-company rules', 'Automatic mirroring of transactions between companies in one database.'],
+    ],
+  });
+
+  /* =============================== CH 32 =============================== */
+  HF.addChapter({
+    id: 'odoo-close',
+    part: 'p5',
+    title: 'Odoo: Reporting, Tax Return & Period Close',
+    subtitle: 'Putting it all together — closing a month (and a year) in Odoo',
+    art: 'lock',
+    level: 'Odoo',
+    minutes: 30,
+    quote: 'A clean close is a habit, not a heroic act.',
+    goals: ['Navigate Odoo’s main financial reports', 'File a tax return and post the tax closing entry', 'Run a month-end and year-end close in Odoo', 'Use lock dates and the audit trail'],
+    blocks: [
+      { t: 'h', text: 'The report shelf' },
+      {
+        t: 'table',
+        head: ['Report', 'Use it for', 'Chapter link'],
+        rows: [
+          ['Balance Sheet', 'Financial position; current year earnings', 'Ch 10'],
+          ['Profit and Loss', 'Performance; comparisons; analytic filters', 'Ch 9'],
+          ['Cash Flow Statement', 'Operating/investing/financing (indirect, via account tags)', 'Ch 11'],
+          ['Executive Summary', 'Key ratios and KPIs', 'Ch 20'],
+          ['Tax Return', 'Tax grid totals; tax closing entry', 'Ch 19'],
+          ['General Ledger', 'All movements per account', 'Ch 5'],
+          ['Trial Balance', 'Opening, movements, closing per account', 'Ch 6'],
+          ['Journal Audit / Journal report', 'Entries per journal for review', 'Ch 4'],
+          ['Partner Ledger', 'Customer & vendor balances', 'Ch 5'],
+          ['Aged Receivable / Payable', 'Collections and payment planning', 'Ch 14, 28'],
+          ['Deferred Revenue / Expense', 'Deferrals reconciliation', 'Ch 30'],
+          ['Unrealized Currency Gains/Losses', 'FX revaluation', 'Ch 31'],
+        ],
+      },
+      { t: 'p', html: 'Every report lets you change dates, compare periods, filter by journal/analytic/partner, unfold to journal items, annotate lines, and export to PDF/XLSX. Many can be customised (or new ones built) in report configuration.' },
+
+      { t: 'h', text: 'The tax return' },
+      { t: 'steps', items: [{ t: 'Check the period', d: 'All invoices and bills for the period posted; correct tax codes; no drafts left behind.' }, { t: 'Open the Tax Return', d: 'Accounting > Reporting > Tax Return. Each line comes from tax grids on journal items. Drill into any box.' }, { t: 'Close the period', d: 'Use the closing action: Odoo posts a <b>tax closing entry</b> moving output and input tax balances to a tax payable/receivable account, and locks the tax period.' }, { t: 'File & pay', d: 'Submit to the authority (some localizations have direct e-filing), then pay — reconcile the bank line against the tax payable account.' }] },
+      { t: 'entry', title: 'Tax closing entry (example)', lines: [['Tax Received (output)', 15000, 0], ['Tax Paid (input)', 0, 9000], ['Tax Payable', 0, 6000]] },
+
+      { t: 'h', text: 'Month-end close in Odoo: the checklist' },
+      {
+        t: 'widget',
+        name: 'cycle',
+        opts: {
+          id: 'ch32-close',
+          title: 'Odoo month-end close',
+          center: 'Odoo Close',
+          steps: [
+            { t: 'Bank & cash', d: 'Reconcile all bank, card and cash journals to statements. Clear the suspense and outstanding accounts (only true timing items remain).', ex: 'Accounting dashboard: zero “to reconcile”.' },
+            { t: 'Sales cut-off', d: 'Invoice everything delivered; review Stock Interim (Delivered) and draft invoices.', ex: 'Filter invoices in draft; post or delete.' },
+            { t: 'Purchases cut-off', d: 'Post bills received; accrue received-not-billed (Stock Interim (Received) or accrual entries).', ex: 'Check POs “waiting bills”.' },
+            { t: 'Deferrals & assets', d: 'Generate deferred entries if set to manual; confirm depreciation posted; create assets for new capex bills.', ex: 'Deferred Expense report balance = Prepayments account.' },
+            { t: 'Inventory', d: 'Verify Stock Valuation report = stock valuation account balance; post count adjustments and write-downs.', ex: 'Inventory Valuation report.' },
+            { t: 'Accruals & payroll', d: 'Post accruals (with auto-reverse), payroll entries, provisions.', ex: 'Misc entry with auto-reverse date.' },
+            { t: 'Currency', d: 'Post unrealised FX adjustments.', ex: 'Unrealized Currency Gains/Losses report → adjustment entry.' },
+            { t: 'Reconcile balance sheet', d: 'AR/AP aged reports tie to control accounts; tax accounts; intercompany; loans to statements.', ex: 'Partner Ledger total = Receivable balance.' },
+            { t: 'Tax return', d: 'Review, post the tax closing entry, file.', ex: 'Tax Return report → closing.' },
+            { t: 'Review & lock', d: 'P&L and balance sheet vs budget/last month; investigate variances; set lock dates.', ex: 'Lock dates updated to month-end.' },
+          ],
+        },
+      },
+
+      { t: 'h', text: 'Year-end in Odoo' },
+      { t: 'list', items: ['<b>No closing entries required</b>: P&L accounts start the new fiscal year at zero in reports; last year’s result appears in equity as undistributed / previous years’ earnings automatically.', 'If your country requires formal allocation (to retained earnings, legal reserve, dividends), post a Misc entry from the current-year earnings account to the equity accounts after approval of the accounts.', 'Final adjustments: depreciation, inventory count, provisions, income tax expense (current and deferred), audit adjustments.', 'Set the <b>fiscal year lock date</b> once accounts are final.'] },
+      { t: 'odoo', title: 'Lock dates & audit trail', path: 'Accounting > Accounting > Lock Dates', html: 'Lock dates prevent posting or modifying entries before a date. Depending on version you’ll see separate dates for <b>sales</b>, <b>purchases</b>, <b>tax return</b> and <b>everything (global/hard lock)</b>, with exceptions grantable for specific users. The <b>audit trail</b> logs changes on posted entries (enforced in some localizations), and some countries use <b>hash/inalterability</b> checks so posted entries can be proven unchanged.' },
+      { t: 'say', who: 'penny', html: 'And that’s the full loop, Max: everything from Chapter 1 — the equation, debits and credits, accruals, statements, reconciliations — now happening inside Odoo. You don’t just click buttons anymore. You know <b>what the buttons do</b>.' },
+      { t: 'say', who: 'max', right: true, html: 'And I finally know if I’m making money. (I am! 🎉)' },
+      { t: 'bullets', items: ['Know the report shelf: BS, P&L, cash flow, executive summary, tax return, GL, TB, partner ledger, aged reports.', 'Tax return → closing entry → file → pay & reconcile.', 'Month-end: bank, cut-off, deferrals/assets, inventory, accruals, FX, reconciliations, tax, review & lock.', 'Year-end: no mandatory closing entries; allocate results if required; lock the year.', 'Lock dates and audit trail protect the integrity of closed periods.'] },
+    ],
+    quiz: [
+      { q: 'Which Odoo report shows tax grid totals for filing?', o: ['General Ledger', 'Tax Return', 'Partner Ledger', 'Executive Summary'], a: 1, e: 'The Tax Return report.' },
+      { q: 'The tax closing entry moves output and input tax balances to…', o: ['Revenue', 'A tax payable/receivable account', 'Retained earnings', 'Bank'], a: 1, e: 'Net amount due to/from the authority.' },
+      { q: 'At year-end in Odoo, you MUST…', o: ['Post closing entries for every P&L account', 'Nothing special: the result rolls into equity automatically (allocate if local rules require), then lock', 'Create a new database', 'Delete last year’s entries'], a: 1, e: 'Odoo computes current/previous year earnings.' },
+      { q: 'A good month-end check for receivables in Odoo is…', o: ['Aged Receivable total = Receivable account balance', 'Revenue = cash', 'Tax report = P&L', 'Assets = expenses'], a: 0, e: 'Sub-ledger must tie to the control account.' },
+      { q: 'Lock dates are used to…', o: ['Speed up reports', 'Prevent changes to closed periods', 'Schedule payments', 'Set depreciation'], a: 1, e: 'Protect finalised numbers.' },
+      { q: 'Which is part of Odoo month-end cut-off on the sales side?', o: ['Reviewing Stock Interim (Delivered) and draft invoices', 'Changing fiscal positions', 'Deleting customers', 'Disabling taxes'], a: 0, e: 'Invoice everything delivered in the period.' },
+    ],
+    cards: [
+      ['Tax closing entry', 'Entry moving tax balances to payable/receivable when closing a tax period.'],
+      ['Lock date', 'Prevents creating/modifying entries on or before a date.'],
+      ['Audit trail (Odoo)', 'Log of changes on posted entries.'],
+      ['Year-end in Odoo', 'Results roll into equity automatically; allocate if required; lock the year.'],
+      ['Month-end tie-outs', 'Aged reports = control accounts; stock valuation report = stock account; deferred reports = deferral accounts.'],
+    ],
+  });
+})();
